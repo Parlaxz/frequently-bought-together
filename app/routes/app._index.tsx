@@ -1,5 +1,5 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { Page, Layout, Card, BlockStack } from "@shopify/polaris";
+import { Page, Layout, Card, BlockStack, Link } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -21,6 +21,11 @@ export default function Index() {
                     <Layout.Section>
                         <Card>
                             <div className="text-red-500">red text</div>
+                            <div className="grid">
+                                <Link url="/app/frequently-bought-together/new">
+                                    new Frequently Bought Together
+                                </Link>
+                            </div>
                         </Card>
                     </Layout.Section>
                 </Layout>
