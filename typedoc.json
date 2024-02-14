@@ -1,0 +1,6 @@
+{
+        "entryPoints": ["./framework"], 
+        "out": "docs", 
+        "entryPointStrategy": "expand",
+        "exclude": ["**/app/db.server.ts","**/app/entry.server.tsx","**/app/globals.d.ts"]
+    }

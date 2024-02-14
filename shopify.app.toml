@@ -2,7 +2,7 @@
 
 client_id = "5c9c18ba824b73d4b4e6300e03bffcf9"
 name = "frequently-bought-together"
-application_url = "https://previously-same-wav-girls.trycloudflare.com"
+application_url = "https://somehow-solve-customized-trinity.trycloudflare.com"
 embedded = true
 
 [build]
@@ -16,9 +16,9 @@ scopes = "read_discounts,write_discounts,write_products"
 
 [auth]
 redirect_urls = [
-  "https://previously-same-wav-girls.trycloudflare.com/auth/callback",
-  "https://previously-same-wav-girls.trycloudflare.com/auth/shopify/callback",
-  "https://previously-same-wav-girls.trycloudflare.com/api/auth/callback"
+  "https://somehow-solve-customized-trinity.trycloudflare.com/auth/callback",
+  "https://somehow-solve-customized-trinity.trycloudflare.com/auth/shopify/callback",
+  "https://somehow-solve-customized-trinity.trycloudflare.com/api/auth/callback"
 ]
 
 [webhooks]
