@@ -14,6 +14,7 @@ import {
     RequirementType,
 } from "@shopify/discount-app-components";
 import { Banner, Layout } from "@shopify/polaris";
+import type { ConfigShape } from "~/routes/app.frequently-bought-together.$id";
 
 /**
  * Custom hook for managing discount form logic
@@ -22,14 +23,7 @@ import { Banner, Layout } from "@shopify/polaris";
  * @example const { fields, submit, isLoading, currencyCode, errorBanner, redirect, isNew, actionData } = useDiscountForm(config);
  *
  */
-export const useDiscountForm = (
-    config: {
-        title: string;
-        default: any;
-        type: "string" | "float" | "int";
-    }[],
-    defaultTitle = "",
-) => {
+export const useDiscountForm = (config: any, defaultTitle = "") => {
     const loaderData = useLoaderData();
     //@ts-ignore
     const discountData = loaderData?.discount?.discount;
@@ -79,14 +73,9 @@ export const useDiscountForm = (
             </Layout.Section>
         ) : null;
 
-    const dynamicFields: any = {};
-    config.forEach((fieldConfig: { title: string }) => {
-        //@ts-ignore
-        dynamicFields[fieldConfig.title] = DynamicField(
-            fieldConfig,
-            discountData,
-        );
-    });
+    const transformedConfig = transformObjectHandler(config);
+    console.log("transformedConfig");
+
     const { fields, submit } = useForm({
         fields: {
             discountId: useField(discountData?.discountId || ""),
@@ -117,21 +106,11 @@ export const useDiscountForm = (
                 discountData?.startDate || todaysDate.toISOString(),
             ),
             endDate: useField(discountData?.endDate || null),
-            configuration: dynamicFields,
+            configuration: transformedConfig,
             metafieldId: useField(discountData?.metafieldId || ""),
         },
         onSubmit: async (form) => {
             const discountConfig: any = {};
-            config.forEach((fieldConfig) => {
-                console.log("fieldConfig", fieldConfig);
-                //@ts-ignore
-                discountConfig[fieldConfig.title] =
-                    fieldConfig.type === "int"
-                        ? parseInt(form.configuration[fieldConfig.title])
-                        : fieldConfig.type === "float"
-                          ? parseFloat(form.configuration[fieldConfig.title])
-                          : form.configuration[fieldConfig.title];
-            });
 
             const discount = {
                 title: form.discountTitle,
@@ -170,16 +149,33 @@ export const useDiscountForm = (
         submit,
     };
 };
+function transformObjectHandler(obj: ConfigShape) {
+    return TransformObject(obj);
+}
+function TransformObject(obj: any) {
+    const result: any = {};
+    for (const key in obj) {
+        const value = obj[key];
+        console.log("key", key);
+        console.log("value", value);
+        if (
+            typeof value === "object" &&
+            value !== null &&
+            !Array.isArray(value)
+        ) {
+            console.log(1);
+            result[key] = TransformObject(value);
+        } else {
+            console.log(2);
+            console.log("key", key);
+            console.log("value", value);
 
-/**
- * A helper function that creates a dynamic field for a discount.
- * @param fieldConfig - The configuration for the field.
- * @param discountData - The data for the discount.
- * @returns The field created using the useField hook.
- */
-const DynamicField = (fieldConfig: any, discountData: any) => {
-    return useField(
-        discountData?.configuration?.[fieldConfig.title] ||
-            fieldConfig.default.toString(),
-    );
+            result[key] = DynamicField(value);
+        }
+    }
+
+    return result;
+}
+const DynamicField = (value: any) => {
+    return useField(value);
 };

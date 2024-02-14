@@ -372,7 +372,6 @@ export async function getFunctionalDiscount(
 
     //@ts-ignore
     const method = methodDict[data?.data?.discountNode?.id.split("/")[3]];
-    console.log("method", data);
     const returnData = {
         discount: {
             discountId: data?.data?.discountNode?.id,

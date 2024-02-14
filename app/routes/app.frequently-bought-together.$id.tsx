@@ -14,6 +14,7 @@ import {
     Card,
     TextField,
     Text,
+    ChoiceList,
 } from "@shopify/polaris";
 
 import shopifyServer, { authenticate } from "../shopify.server";
@@ -21,23 +22,26 @@ import shopifyServer, { authenticate } from "../shopify.server";
 import { useDiscountForm } from "framework/lib/discounts/functional/hooks";
 import {
     createFunctionalDiscount,
+    getFunctionId,
     getFunctionalDiscount,
     updateFunctionalDiscount,
 } from "framework/lib/discounts/functional/helpers";
 import { ResourcePicker } from "framework/components/form";
+import { getAppMetafields } from "framework/lib/metafields/helpers";
 
 //------------------------------------CONFIGURE HERE------------------------------------
-const NAMESPACE = "$app:cart-goal";
+const NAMESPACE = "$app:upsellApp";
 const KEY = "function-configuration";
-const DISCOUNT_NAME = "Cart Goal";
 //----------------------------------END CONFIGURE HERE-----------------------------------
 
 export const loader = async ({ params, request }: ActionFunctionArgs) => {
     const { id } = params;
+    const { admin } = await authenticate.admin(request);
+    const metafields = await getAppMetafields(admin);
+    console.log("metafields", metafields.edges[0].node);
     if (id === "new") {
         return json({ discount: null });
     }
-    const { admin } = await authenticate.admin(request);
 
     const returnData = await getFunctionalDiscount(id, admin, NAMESPACE, KEY);
     return json({ discount: returnData });
@@ -45,17 +49,15 @@ export const loader = async ({ params, request }: ActionFunctionArgs) => {
 
 // This is a server-side action that is invoked when the form is submitted.
 // It makes an admin GraphQL request to create a discount.
-export const action = async ({ params, request }: ActionFunctionArgs) => {
-    //1. get basic info
-    const { functionId } = params;
+export const action = async ({ request }: ActionFunctionArgs) => {
+    //1. get prerequisites
     const { admin } = await shopifyServer.authenticate.admin(request);
+    const functionId = await getFunctionId(admin, "upsellApp");
 
     //2. get and parse form data
     const formData = await request.formData();
 
     const parsedDiscount = JSON.parse(String(formData.get("discount") || ""));
-    console.log("formData.get(id) ||)", formData.get("id"));
-
     const parsedId = String(formData.get("id") || "");
     const parsedMetafieldId = String(formData.get("metafieldId") || "");
     //3. create Discount
@@ -77,24 +79,38 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
         });
     }
 };
-
+export interface ConfigShape {
+    target: {
+        type: "product" | "tag" | "collection";
+        value: string[];
+    };
+    offerItems: { type: "product" | "tag" | "collection"; value: string[] };
+    offerDiscount: { type: string; value: string; offerOnly: boolean };
+}
 // This is the React component for the page.
 export default function DiscountNew() {
     //build discount data
-    const config: {
-        title: string;
-        default: any;
-        type: "int" | "float" | "string";
-    }[] = [
-        { title: "goalAmount1", default: 10, type: "int" },
-        { title: "percentage1", default: 10, type: "float" },
-        { title: "discountType1", default: "cart", type: "string" },
-    ];
+
+    const config: ConfigShape = {
+        target: {
+            type: "product",
+            value: [],
+        },
+        offerItems: {
+            type: "product",
+            value: [],
+        },
+        offerDiscount: {
+            type: "percentage",
+            value: "10",
+            offerOnly: false,
+        },
+    };
 
     const { isNew, redirect, isLoading, errorBanner, fields, submit } =
         useDiscountForm(config);
-
     const { discountTitle, combinesWith, configuration } = fields;
+    console.log("configuration", configuration);
 
     return (
         // Render a discount form using Polaris components and the discount app components
@@ -114,37 +130,122 @@ export default function DiscountNew() {
                 {errorBanner}
                 <Layout.Section>
                     <Form method="post">
-                        <BlockStack align="space-around" gap={undefined}>
+                        <BlockStack align="space-around" gap={"200"}>
                             {isNew && (
-                                <TextField
-                                    label="Goal amount"
-                                    autoComplete="on"
-                                    {...discountTitle}
-                                />
+                                <Card>
+                                    <Text variant="headingMd" as="h2">
+                                        Frequently Bought Together
+                                    </Text>
+                                    <TextField
+                                        label="Discount Title"
+                                        autoComplete="on"
+                                        {...discountTitle}
+                                    />
+                                </Card>
                             )}
                             <Card>
-                                <BlockStack gap={undefined}>
+                                <BlockStack gap={"200"}>
                                     <Text variant="headingMd" as="h2">
-                                        {DISCOUNT_NAME}
+                                        Target Products
                                     </Text>
-                                    <ResourcePicker label="trigger" />
+                                    <ChoiceList
+                                        title="Trigger Type"
+                                        choices={[
+                                            {
+                                                label: "Product",
+                                                value: "product",
+                                            },
+                                            {
+                                                label: "Collection",
+                                                value: "collection",
+                                            },
+                                            {
+                                                label: "Tag",
+                                                value: "tag",
+                                            },
+                                        ]}
+                                        {...configuration.target.type}
+                                        selected={
+                                            configuration.target.type.value
+                                        }
+                                        onChange={(value) => {
+                                            configuration.target.type.onChange(
+                                                value[0],
+                                            );
+                                        }}
+                                    />
+                                    {configuration.target.type.value ===
+                                    "tag" ? (
+                                        <>tag</>
+                                    ) : configuration.target.type.value ===
+                                      "collection" ? (
+                                        <ResourcePicker
+                                            label="Pick your Trigger Collections"
+                                            {...configuration.target.value}
+                                            isCollection
+                                        />
+                                    ) : configuration.target.type.value ===
+                                      "product" ? (
+                                        <ResourcePicker
+                                            label="Pick your Trigger Products"
+                                            {...configuration.target.value}
+                                        />
+                                    ) : (
+                                        <></>
+                                    )}
+                                </BlockStack>
+                            </Card>
+                            <Card>
+                                <BlockStack gap={"200"}>
+                                    <Text variant="headingMd" as="h2">
+                                        Offer Products
+                                    </Text>
 
-                                    <TextField
-                                        label="Goal amount"
-                                        autoComplete="on"
-                                        {...configuration.goalAmount1}
+                                    <ChoiceList
+                                        title="Offer Type"
+                                        choices={[
+                                            {
+                                                label: "Product",
+                                                value: "product",
+                                            },
+                                            {
+                                                label: "Collection",
+                                                value: "collection",
+                                            },
+                                            {
+                                                label: "Tag",
+                                                value: "tag",
+                                            },
+                                        ]}
+                                        {...configuration.target.type}
+                                        selected={
+                                            configuration.target.type.value
+                                        }
+                                        onChange={(value) => {
+                                            configuration.target.type.onChange(
+                                                value[0],
+                                            );
+                                        }}
                                     />
-                                    <TextField
-                                        label="Discount percentage"
-                                        autoComplete="on"
-                                        {...configuration.percentage1}
-                                        suffix="%"
-                                    />
-                                    <TextField
-                                        label="Discount type"
-                                        autoComplete="on"
-                                        {...configuration.discountType1}
-                                    />
+                                    {configuration.target.type.value ===
+                                    "tag" ? (
+                                        <>tag</>
+                                    ) : configuration.target.type.value ===
+                                      "collection" ? (
+                                        <ResourcePicker
+                                            label="Pick your Offer Collections"
+                                            {...configuration.target.value}
+                                            isCollection
+                                        />
+                                    ) : configuration.target.type.value ===
+                                      "product" ? (
+                                        <ResourcePicker
+                                            label="Pick your Offer Products"
+                                            {...configuration.target.value}
+                                        />
+                                    ) : (
+                                        <></>
+                                    )}
                                 </BlockStack>
                             </Card>
                             <div className="hidden">

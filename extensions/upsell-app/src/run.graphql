@@ -11,7 +11,7 @@ query RunInput {
     }
   }
   discountNode {
-    metafield(namespace: "upsellApp", key: "function-configuration"){
+    metafield(namespace: "$app:upsellApp", key: "function-configuration"){
       value
     }
   }

@@ -4,11 +4,17 @@ import { useState } from "react";
 export function ResourcePicker({
     label,
     isCollection = false,
+    value,
+    defaultValue = [],
+    onChange,
 }: {
     label: string;
     isCollection?: boolean;
+    value: any;
+    defaultValue?: any;
+    onChange: any;
 }) {
-    const [product, setProduct] = useState<any>([]);
+    const [product, setProduct] = useState<any>(defaultValue);
     const handleClick = async () => {
         const selected = await shopify.resourcePicker({
             multiple: true,
@@ -26,6 +32,16 @@ export function ResourcePicker({
             },
         });
         if (selected) {
+            onChange(
+                selected.map((product) => {
+                    return {
+                        id: product.id,
+                        title: product.title,
+                        handle: product.handle ?? product.title,
+                    };
+                }),
+            );
+
             setProduct(
                 selected.map((product) => {
                     return {
