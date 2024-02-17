@@ -26,7 +26,7 @@ import {
     getFunctionalDiscount,
     updateFunctionalDiscount,
 } from "framework/lib/discounts/functional/helpers";
-import { ResourcePicker } from "framework/components/form";
+import { ResourcePicker } from "framework/components/form/ResourcePicker";
 import { getAppMetafields } from "framework/lib/metafields/helpers";
 
 //------------------------------------CONFIGURE HERE------------------------------------
