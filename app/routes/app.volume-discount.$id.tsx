@@ -31,8 +31,8 @@ import { useDiscountForm } from "~/framework/lib/helpers/hooks";
 import { getAppDiscountNodes } from "~/framework/lib/helpers/discounts";
 import { getAllTags } from "~/framework/components/form/TagPicker";
 import ProductPicker from "~/framework/components/form/ProductPicker";
-import DiscountSettingsCard from "~/framework/components/form/DiscountSettingsCard";
 import TextBox from "~/framework/components/form/TextBox";
+import VolumeDiscountCard from "~/framework/components/form/VolumeDiscountCard";
 
 /**
  * Loads the data for the frequently bought together app.
@@ -96,7 +96,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
         const discountManager = {
             ...parsedDiscount,
             title: discountTitle,
-            type: "frequentlyBoughtTogether",
+            type: "volumeDiscount",
         };
         const functionId = await getFunctionId(admin, "upsellApp");
 
@@ -114,7 +114,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
         ...parsedDiscount,
         title: parsedDiscount.title,
         id: id,
-        type: "frequentlyBoughtTogether",
+        type: "volumeDiscount",
     };
     await updatePromotions(admin, promotionDiscount);
 
@@ -137,45 +137,28 @@ export default function FrequentlyBoughtTogether() {
             type: "product" | "tag" | "collection";
             value: string[];
         };
-        offerItems: {
-            type: "product" | "tag" | "collection";
-            value: string[];
-            numItems: number;
-        };
-        offerDiscount: { type: string; value: string; offerOnly: boolean };
+
+        volumes: {
+            type: "percentage" | "fixedAmount";
+            value: number;
+        }[];
     }
+
     const config: ConfigShape = {
         target: {
             type:
                 loaderData?.discount?.configuration?.target?.type ?? "product",
             value: loaderData?.discount?.configuration?.target?.value ?? [],
         },
-        offerItems: {
-            type:
-                loaderData?.discount?.configuration?.offerItems?.type ??
-                "product",
-            value: loaderData?.discount?.configuration?.offerItems?.value ?? [],
-            numItems:
-                loaderData?.discount?.configuration?.offerItems?.numItems ?? 1,
-        },
-        offerDiscount: {
-            type:
-                loaderData?.discount?.configuration?.offerDiscount?.type ??
-                "percentage",
-            value:
-                loaderData?.discount?.configuration?.offerDiscount?.value ??
-                "0",
-            offerOnly:
-                loaderData?.discount?.configuration?.offerDiscount?.offerOnly ??
-                false,
-        },
+        volumes: loaderData?.discount?.configuration?.volumes ?? [
+            { type: "percentage", value: 0 },
+        ],
     };
     //----------------------------------END CONFIGURE HERE-----------------------------------
 
     const { isNew, redirect, isLoading, errorBanner, fields, submit } =
         useDiscountForm(config);
     const { discountTitle, combinesWith, configuration } = fields;
-
     return (
         <Page
             title={isNew ? "New discount" : "Edit discount"}
@@ -211,26 +194,8 @@ export default function FrequentlyBoughtTogether() {
                                 tags={tags}
                                 label={"Target Products"}
                             />
-                            <Card>
-                                <ProductPicker
-                                    type={configuration.offerItems.type}
-                                    value={configuration.offerItems.value}
-                                    tags={tags}
-                                    label="Offer Products"
-                                    isCard={false}
-                                />
-                                <TextBox
-                                    field={configuration.offerItems.numItems}
-                                    label="Number of Items"
-                                    variant="number"
-                                    minimum={1}
-                                    maximum={4}
-                                />
-                            </Card>
-                            <DiscountSettingsCard
-                                type={configuration.offerDiscount.type}
-                                value={configuration.offerDiscount.value}
-                                label="Discount Settings"
+                            <VolumeDiscountCard
+                                volumes={configuration.volumes}
                             />
                             {/* TODO: Discount message to show in cart when discount is applied */}
                             {/* TODO: Apply To Input

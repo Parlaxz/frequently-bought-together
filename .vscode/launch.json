@@ -1,0 +1,11 @@
+{
+        "version": "0.2.0",
+        "configurations": [{
+            "name": "Hydrogen (npm)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "dev"], // same script name as in package.json
+            "skipFiles": ["<node_internals>/**"]
+        }]
+      }

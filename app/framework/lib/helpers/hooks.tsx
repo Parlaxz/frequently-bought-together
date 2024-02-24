@@ -14,7 +14,6 @@ import {
     RequirementType,
 } from "@shopify/discount-app-components";
 import { Banner, Layout } from "@shopify/polaris";
-import type { ConfigShape } from "~/routes/app.frequently-bought-together.$id";
 
 /**
  * Custom hook for managing discount form logic
@@ -25,11 +24,11 @@ import type { ConfigShape } from "~/routes/app.frequently-bought-together.$id";
  */
 export const useDiscountForm = (config: any, defaultTitle = "") => {
     const loaderData = useLoaderData();
+    console.log("loaderData", loaderData);
     //@ts-ignore
-    const discountData = loaderData?.discount?.discount;
-
-    const loaderDiscountMethod = discountData?.discountMethod;
-    const isNew = discountData == null;
+    const discountData = loaderData?.discount;
+    const loaderDiscountMethod = discountData?.method;
+    const isNew = discountData === null;
     const submitForm = useSubmit();
     const actionData = useActionData() as { errors?: any[] };
     const navigation = useNavigation();
@@ -74,20 +73,15 @@ export const useDiscountForm = (config: any, defaultTitle = "") => {
         ) : null;
 
     const transformedConfig = transformObjectHandler(config);
-    console.log("transformedConfig");
 
     const { fields, submit } = useForm({
         fields: {
-            discountId: useField(discountData?.discountId || ""),
-            discountTitle: useField(
-                discountData?.discountTitle || defaultTitle,
-            ),
-            discountMethod: useField(
-                discountData?.discountMethod || DiscountMethod.Automatic,
-            ),
-            discountCode: useField(
+            discountId: useField(discountData?.id || ""),
+            discountTitle: useField(discountData?.title || defaultTitle),
+            method: useField(discountData?.method || DiscountMethod.Automatic),
+            code: useField(
                 loaderDiscountMethod === DiscountMethod.Code
-                    ? discountData?.discountCode || ""
+                    ? discountData?.code || ""
                     : "",
             ),
             combinesWith: useField(
@@ -110,19 +104,17 @@ export const useDiscountForm = (config: any, defaultTitle = "") => {
             metafieldId: useField(discountData?.metafieldId || ""),
         },
         onSubmit: async (form) => {
-            const discountConfig: any = {};
-
             const discount = {
                 title: form.discountTitle,
-                method: form.discountMethod,
-                code: form.discountCode,
+                method: form.method,
+                code: form.code,
                 combinesWith: form.combinesWith,
                 usageLimit:
                     form.usageLimit == null ? null : parseInt(form.usageLimit),
                 appliesOncePerCustomer: form.appliesOncePerCustomer,
                 startsAt: form.startDate,
                 endsAt: form.endDate,
-                configuration: discountConfig,
+                configuration: form.configuration,
             };
 
             submitForm(
@@ -156,20 +148,14 @@ function TransformObject(obj: any) {
     const result: any = {};
     for (const key in obj) {
         const value = obj[key];
-        console.log("key", key);
-        console.log("value", value);
+
         if (
             typeof value === "object" &&
             value !== null &&
             !Array.isArray(value)
         ) {
-            console.log(1);
             result[key] = TransformObject(value);
         } else {
-            console.log(2);
-            console.log("key", key);
-            console.log("value", value);
-
             result[key] = DynamicField(value);
         }
     }

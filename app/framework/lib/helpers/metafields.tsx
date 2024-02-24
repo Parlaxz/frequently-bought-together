@@ -6,11 +6,11 @@
 export const getCurrentAppInstallation = async (admin: any) => {
     const response = await admin.graphql(
         `#graphql
-                   query {
-                            currentAppInstallation {
-                               id
-                            }
-                    }`,
+                       query {
+                                currentAppInstallation {
+                                   id
+                                }
+                        }`,
     );
     const data = await response.json();
     return data?.data?.currentAppInstallation?.id;
@@ -22,22 +22,21 @@ export const getCurrentAppInstallation = async (admin: any) => {
  */
 export const getAppMetafields = async (admin: any) => {
     const appInstallationId = await getCurrentAppInstallation(admin);
-    console.log("appInstallationId", appInstallationId);
     const response = await admin.graphql(
         `#graphql
-                        query GetAppInstallationMetafields($ownerId: ID!) {
-                                appInstallation(id: $ownerId) {
-                                metafields(first: 3) {
-                                edges {
-                                        node {
-                                        namespace
-                                        key
-                                        value
-                                        }
-                                }
-                                }
-                                }
-                                }`,
+                            query GetAppInstallationMetafields($ownerId: ID!) {
+                                    appInstallation(id: $ownerId) {
+                                    metafields(first: 3) {
+                                    edges {
+                                            node {
+                                            namespace
+                                            key
+                                            value
+                                            }
+                                    }
+                                    }
+                                    }
+                                    }`,
         {
             variables: {
                 ownerId: appInstallationId,
@@ -61,19 +60,19 @@ export const setAppMetafields = async (admin: any, metafields: Metafield[]) => {
     });
     const response = await admin.graphql(
         `#graphql
-                           mutation UpdateAppDataMetafields($metafieldsSetInput: [MetafieldsSetInput!]!) {
-                            metafieldsSet(metafields: $metafieldsSetInput) {
-                                metafields {
-                                    id
-                                    namespace
-                                    key
+                               mutation UpdateAppDataMetafields($metafieldsSetInput: [MetafieldsSetInput!]!) {
+                                metafieldsSet(metafields: $metafieldsSetInput) {
+                                    metafields {
+                                        id
+                                        namespace
+                                        key
+                                    }
+                                    userErrors {
+                                        field
+                                        message
+                                    }
                                 }
-                                userErrors {
-                                    field
-                                    message
-                                }
-                            }
-                        }`,
+                            }`,
         {
             variables: {
                 metafieldsSetInput: metafieldInput,
@@ -86,38 +85,39 @@ export const setAppMetafields = async (admin: any, metafields: Metafield[]) => {
 
 export const getPromotions = async (admin: any) => {
     const appMetafields = await getAppMetafields(admin);
-    console.log("appMetafields", appMetafields);
     const promotions = appMetafields?.edges?.find(
         (edge: any) =>
             edge.node.namespace === "storage" && edge.node.key === "promotions",
     );
+    return JSON.parse(promotions?.node?.value);
+};
 
-    return promotions;
+export const getPromotion = async (admin: any, id: string) => {
+    const promotions = await getPromotions(admin);
+    return promotions.find((p: any) => p.id === id);
 };
 
 /** Steps
-1. get the `promotions` array via [[getPromotions()]]
-2. filter out any promotion with the same id as the `promotion` parameter
-3. append the `promotion` parameter to `promotions`
-4. get the current app installation via [[getCurrentAppInstallation()]]
-5. build the metafields array via
-```js
-{
-	namespace: "storage",
-	key: "promotions",
-	type: "json",
-	value: promotions,
-}
-```
-6. set the promotions array via [[setAppMetafields()]] 
-
- */
+    1. get the `promotions` array via [[getPromotions()]]
+    2. filter out any promotion with the same id as the `promotion` parameter
+    3. append the `promotion` parameter to `promotions`
+    4. get the current app installation via [[getCurrentAppInstallation()]]
+    5. build the metafields array via
+    ```js
+    {
+            namespace: "storage",
+            key: "promotions",
+            type: "json",
+            value: promotions,
+    }
+    ```
+    6. set the promotions array via [[setAppMetafields()]] 
+    
+     */
 export const updatePromotions = async (admin: any, promotion: any) => {
     const promotions = await getPromotions(admin);
-    const currentPromotions = promotions?.node?.value || [];
-    const newPromotions = currentPromotions.filter(
-        (p: any) => p.id !== promotion.id,
-    );
+
+    const newPromotions = promotions.filter((p: any) => p.id !== promotion.id);
     newPromotions.push(promotion);
     const metafields = {
         namespace: "storage",

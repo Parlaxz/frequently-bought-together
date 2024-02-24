@@ -183,7 +183,6 @@ export const updateFunctionalDiscount = async ({
                 },
             ],
         };
-        console.log("testttttt", baseCodeDiscount);
 
         const response = await admin.graphql(
             `#graphql
@@ -212,7 +211,6 @@ export const updateFunctionalDiscount = async ({
         const responseJson = await response.json();
 
         const errors = responseJson?.data?.discountCreate?.userErrors ?? [];
-        console.log("errors", errors);
         return json({ errors });
     } else {
         const response = await admin.graphql(
