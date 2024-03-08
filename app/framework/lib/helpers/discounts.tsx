@@ -45,7 +45,37 @@ export const getAppDiscountNodes = async (admin: any) => {
     const data = await response.json();
     return data?.data?.discountNodes?.edges.map((edge: any) => edge.node);
 };
-
+export const getFunctionalDiscountNodes = async (admin: any) => {
+    const response = await admin.graphql(
+        `#graphql
+                query discountNodes{
+    discountNodes(first: 250) {
+    nodes {
+      discount {
+        ... on DiscountAutomaticApp {
+                discountId
+          appDiscountType {
+            functionId
+            title
+          }
+        }
+      }
+      metafields(first: 1) {
+                nodes {
+                        namespace
+                        value
+                        key     
+                        id
+        }
+      }
+    }
+  }
+}
+                                `,
+    );
+    const data = await response.json();
+    return data?.data?.discountNodes;
+};
 /**
  * Get a discount node by its ID
  * @param admin API client

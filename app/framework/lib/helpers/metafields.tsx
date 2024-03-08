@@ -114,7 +114,11 @@ export const getPromotion = async (admin: any, id: string) => {
     6. set the promotions array via [[setAppMetafields()]] 
     
      */
-export const updatePromotions = async (admin: any, promotion: any) => {
+export const updatePromotions = async (
+    admin: any,
+    session: any,
+    promotion: any,
+) => {
     const promotions = await getPromotions(admin);
 
     const newPromotions = promotions.filter((p: any) => p.id !== promotion.id);
@@ -126,5 +130,35 @@ export const updatePromotions = async (admin: any, promotion: any) => {
         value: JSON.stringify(newPromotions),
     };
     const response = await setAppMetafields(admin, [metafields]);
+    initStorefrontTokens(admin, session);
+
     return response;
+};
+
+export const initStorefrontTokens = async (admin: any, session: any) => {
+    const appMetafields = await getAppMetafields(admin);
+    const storefrontTokens = appMetafields?.edges?.find(
+        (edge: any) =>
+            edge.node.namespace === "storage" &&
+            edge.node.key === "storefrontToken",
+    );
+    if (!storefrontTokens) {
+        const storefront_access_token =
+            new admin.rest.resources.StorefrontAccessToken({
+                session: session,
+            });
+        storefront_access_token.title = "storefrontToken";
+        await storefront_access_token.save({
+            update: true,
+        });
+        const access_token = storefront_access_token.access_token;
+        const metafields = {
+            namespace: "storage",
+            key: "storefrontToken",
+            type: "json",
+            value: JSON.stringify({ access_token }),
+        };
+
+        await setAppMetafields(admin, [metafields]);
+    }
 };

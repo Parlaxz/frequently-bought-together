@@ -141,7 +141,7 @@ export const useDiscountForm = (config: any, defaultTitle = "") => {
         submit,
     };
 };
-function transformObjectHandler(obj: ConfigShape) {
+function transformObjectHandler(obj: any) {
     return TransformObject(obj);
 }
 function TransformObject(obj: any) {

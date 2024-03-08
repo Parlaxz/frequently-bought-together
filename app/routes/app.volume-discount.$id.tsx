@@ -1,19 +1,11 @@
 import type { ActionFunctionArgs } from "@remix-run/node";
 
-import { Form, json, useLoaderData } from "@remix-run/react";
+import { json, useLoaderData } from "@remix-run/react";
 import {
     CombinationCard,
     DiscountClass,
-    onBreadcrumbAction,
 } from "@shopify/discount-app-components";
-import {
-    Layout,
-    Page,
-    PageActions,
-    BlockStack,
-    Card,
-    Text,
-} from "@shopify/polaris";
+import { Card, Text } from "@shopify/polaris";
 
 import shopifyServer, {
     authenticate,
@@ -23,16 +15,14 @@ import {
     getPromotion,
     updatePromotions,
 } from "~/framework/lib/helpers/metafields";
-import {
-    createFunctionalDiscount,
-    getFunctionId,
-} from "~/framework/lib/helpers/functionalDiscount";
+import { initFunctionalDiscount } from "~/framework/lib/helpers/functionalDiscount";
 import { useDiscountForm } from "~/framework/lib/helpers/hooks";
-import { getAppDiscountNodes } from "~/framework/lib/helpers/discounts";
 import { getAllTags } from "~/framework/components/form/TagPicker";
 import ProductPicker from "~/framework/components/form/ProductPicker";
 import TextBox from "~/framework/components/form/TextBox";
 import VolumeDiscountCard from "~/framework/components/form/VolumeDiscountCard";
+import DiscountMetadataCard from "~/framework/components/form/PromotionMetadataCard";
+import PromoPage from "~/framework/components/form/PromoPage";
 
 /**
  * Loads the data for the frequently bought together app.
@@ -70,9 +60,10 @@ const randomlyGeneratedId = () => {
 // This is a server-side action that is invoked when the form is submitted.
 // It makes an admin GraphQL request to create a discount.
 export const action = async ({ params, request }: ActionFunctionArgs) => {
+    const promoName = "volumeDiscount";
     // 1. get prerequisites from the request and params
     let { id } = params;
-    const { admin } = await shopifyServer.authenticate.admin(request);
+    const { admin, session } = await shopifyServer.authenticate.admin(request);
 
     // 2. Generate a random ID if it's a new discount.
     if (id === "new") {
@@ -84,39 +75,24 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     const parsedDiscount = JSON.parse(String(formData.get("discount") || ""));
 
     //3. Check if a functional discount exists, if not create one
-    const existingDiscount = await getAppDiscountNodes(admin);
-    const discountTitle = "Don't-Delete--AC-Promotion-Discount-Manager";
-
-    const discountManagerExists = existingDiscount
-        .map((discount: any) => {
-            return discount.discount.title === discountTitle;
-        })
-        .includes(true);
-    if (!discountManagerExists) {
-        const discountManager = {
-            ...parsedDiscount,
-            title: discountTitle,
-            type: "volumeDiscount",
-        };
-        const functionId = await getFunctionId(admin, "upsellApp");
-
-        return createFunctionalDiscount({
-            admin,
-            functionId,
-            discount: discountManager,
-            namespace: NAMESPACE,
-            key: KEY,
-        });
-        //TODO: create discount for free shipping
-    }
+    await initFunctionalDiscount(
+        admin,
+        parsedDiscount,
+        NAMESPACE,
+        KEY,
+        "upsellApp",
+        promoName,
+    );
     //4. Save the discount in the metafields in the promotion
     const promotionDiscount = {
         ...parsedDiscount,
-        title: parsedDiscount.title,
+        title:
+            parsedDiscount?.configuration?.metadata?.title ??
+            parsedDiscount.title,
         id: id,
-        type: "volumeDiscount",
+        type: promoName,
     };
-    await updatePromotions(admin, promotionDiscount);
+    await updatePromotions(admin, session, promotionDiscount);
 
     return json({ status: "success" });
 };
@@ -142,6 +118,10 @@ export default function FrequentlyBoughtTogether() {
             type: "percentage" | "fixedAmount";
             value: number;
         }[];
+        metadata: {
+            discountMessage: string;
+            title: string;
+        };
     }
 
     const config: ConfigShape = {
@@ -153,6 +133,12 @@ export default function FrequentlyBoughtTogether() {
         volumes: loaderData?.discount?.configuration?.volumes ?? [
             { type: "percentage", value: 0 },
         ],
+        metadata: {
+            discountMessage:
+                loaderData?.discount?.configuration?.metadata
+                    ?.discountMessage ?? "",
+            title: loaderData?.discount?.configuration?.metadata?.title ?? "",
+        },
     };
     //----------------------------------END CONFIGURE HERE-----------------------------------
 
@@ -160,81 +146,37 @@ export default function FrequentlyBoughtTogether() {
         useDiscountForm(config);
     const { discountTitle, combinesWith, configuration } = fields;
     return (
-        <Page
-            title={isNew ? "New discount" : "Edit discount"}
-            backAction={{
-                content: "Discounts",
-                onAction: () => onBreadcrumbAction(redirect, true),
-            }}
-            primaryAction={{
-                content: "Save",
-                onAction: submit,
-                loading: isLoading,
-            }}
+        <PromoPage
+            isNew={isNew}
+            redirect={redirect}
+            submit={submit}
+            isLoading={isLoading}
+            errorBanner={errorBanner}
+            nonEmptyFields={[discountTitle]}
         >
-            <Layout>
-                {errorBanner}
-                <Layout.Section>
-                    <Form method="post">
-                        <BlockStack align="space-around" gap={"200"}>
-                            {isNew && (
-                                <Card>
-                                    <Text variant="headingMd" as="h2">
-                                        Frequently Bought Together
-                                    </Text>
-                                    <TextBox
-                                        label="Discount Title"
-                                        field={discountTitle}
-                                    />
-                                </Card>
-                            )}
-                            <ProductPicker
-                                type={configuration.target.type}
-                                value={configuration.target.value}
-                                tags={tags}
-                                label={"Target Products"}
-                            />
-                            <VolumeDiscountCard
-                                volumes={configuration.volumes}
-                            />
-                            {/* TODO: Discount message to show in cart when discount is applied */}
-                            {/* TODO: Apply To Input
-                            Decide if to apply to the discount to all products or offer 
-                            products only */}
-                            {/* TODO:  */}
-                            {/* TODO: Priority:
-                            Number Used to decide how important this promo is if others of the
-                            same type are shown */}
-                            {/* TODO: Preview Image */}
-                            {/* TODO: Description of the promotion */}
-                            <div className="hidden">
-                                <CombinationCard
-                                    combinableDiscountTypes={combinesWith}
-                                    discountClass={DiscountClass.Product}
-                                    discountDescriptor={"Discount"}
-                                />
-                            </div>
-                        </BlockStack>
-                    </Form>
-                </Layout.Section>
-                <Layout.Section></Layout.Section>
-                <Layout.Section>
-                    <PageActions
-                        primaryAction={{
-                            content: "Save discount",
-                            onAction: submit,
-                            loading: isLoading,
-                        }}
-                        secondaryActions={[
-                            {
-                                content: "Discard",
-                                onAction: () =>
-                                    onBreadcrumbAction(redirect, true),
-                            },
-                        ]}
-                    />
-                </Layout.Section>
-            </Layout>
-        </Page>
+            {isNew && (
+                <Card>
+                    <Text variant="headingMd" as="h2">
+                        Frequently Bought Together
+                    </Text>
+                    <TextBox label="Discount Title" field={discountTitle} />
+                </Card>
+            )}
+            <ProductPicker
+                type={configuration.target.type}
+                value={configuration.target.value}
+                tags={tags}
+                label={"Target Products"}
+            />
+            <VolumeDiscountCard volumes={configuration.volumes} />
+            <DiscountMetadataCard configuration={configuration} />
+            <div className="hidden">
+                <CombinationCard
+                    combinableDiscountTypes={combinesWith}
+                    discountClass={DiscountClass.Product}
+                    discountDescriptor={"Discount"}
+                />
+            </div>
+        </PromoPage>
     );
 }

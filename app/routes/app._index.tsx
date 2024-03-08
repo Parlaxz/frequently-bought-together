@@ -3,12 +3,21 @@ import {
     type ActionFunctionArgs,
     type LoaderFunctionArgs,
 } from "@remix-run/node";
-import { Page, Card, BlockStack, Link } from "@shopify/polaris";
+import {
+    Page,
+    Card,
+    BlockStack,
+    Link,
+    IndexTable,
+    Text,
+} from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import { getPromotions } from "~/framework/lib/helpers/metafields";
 import { useLoaderData } from "@remix-run/react";
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
     const { admin } = await authenticate.admin(request);
+
     const promotions: Promotion[] = await getPromotions(admin);
     return json({ promotions });
 };
@@ -32,7 +41,6 @@ export default function Index() {
             <ui-title-bar title="Remix app template"></ui-title-bar>
             <BlockStack gap="500">
                 <Card>
-                    <div className="text-red-500">red text</div>
                     <div className="grid">
                         <Link url="/app/frequently-bought-together/new">
                             new Frequently Bought Together
@@ -43,27 +51,53 @@ export default function Index() {
                     </div>
                 </Card>
                 <Card>
-                    {promotions.map((promotion) => {
-                        const promoType =
-                            promotion.type === "frequentlyBoughtTogether"
-                                ? "frequently-bought-together"
-                                : promotion.type === "volumeDiscount"
-                                  ? "volume-discount"
-                                  : "frequently-bought-together";
-                        const url = `/app/${promoType}/${promotion.id}`;
-                        return (
-                            <div key={promotion.id} className="flex">
-                                <Link url={url}>
-                                    {promotion?.title.length > 0
-                                        ? promotion?.title
-                                        : "Untitled"}
-                                </Link>
-                                <div>{promotion.type}</div>
-                            </div>
-                        );
-                    })}
+                    <PromotionsTable promotions={promotions} />
                 </Card>
             </BlockStack>
         </Page>
+    );
+}
+
+function PromotionsTable({ promotions }: { promotions: Promotion[] }) {
+    const resourceName = {
+        singular: "promotion",
+        plural: "promotions",
+    };
+    const typeDict = {
+        frequentlyBoughtTogether: "Frequently Bought Together",
+        volumeDiscount: "Volume Discount",
+    };
+    const typeToUrl = {
+        frequentlyBoughtTogether: "/app/frequently-bought-together",
+        volumeDiscount: "/app/volume-discount",
+    };
+    const rowMarkup = promotions.map(({ id, title, type, priority }, index) => (
+        <IndexTable.Row id={id} key={id} position={index}>
+            <IndexTable.Cell>
+                <Text variant="bodyMd" fontWeight="bold" as="span">
+                    <Link url={typeToUrl[type] + "/" + id}>{title}</Link>
+                </Text>
+            </IndexTable.Cell>
+            <IndexTable.Cell>{id}</IndexTable.Cell>
+            <IndexTable.Cell>{typeDict[type]}</IndexTable.Cell>
+            <IndexTable.Cell>{priority}</IndexTable.Cell>
+        </IndexTable.Row>
+    ));
+
+    return (
+        <IndexTable
+            resourceName={resourceName}
+            itemCount={promotions.length}
+            headings={[
+                { title: "Title" },
+                { title: "Id" },
+                { title: "Type" },
+                { title: "Priority" },
+                //TODO: created at
+                //stats like selleasy
+            ]}
+        >
+            {rowMarkup}
+        </IndexTable>
     );
 }

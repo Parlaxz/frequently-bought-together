@@ -6,12 +6,14 @@ function TextBox({
     variant = "text",
     minimum = -Math.pow(10, 1000),
     maximum = Math.pow(10, 1000),
+    notEmpty = false,
     label,
 }: {
     field: Field;
     variant?: Variant;
     minimum?: number;
     maximum?: number;
+    notEmpty?: boolean;
     label: string;
 }) {
     if (variant === "money") {
@@ -74,6 +76,11 @@ function TextBox({
                 onChange={(val) => {
                     field.onChange(val);
                 }}
+                error={
+                    notEmpty && field.value === "" && field.touched
+                        ? "Field cannot be empty"
+                        : undefined
+                }
             />
         );
     }

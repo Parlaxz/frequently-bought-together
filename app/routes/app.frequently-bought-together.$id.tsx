@@ -1,19 +1,11 @@
 import type { ActionFunctionArgs } from "@remix-run/node";
 
-import { Form, json, useLoaderData } from "@remix-run/react";
+import { json, useLoaderData } from "@remix-run/react";
 import {
     CombinationCard,
     DiscountClass,
-    onBreadcrumbAction,
 } from "@shopify/discount-app-components";
-import {
-    Layout,
-    Page,
-    PageActions,
-    BlockStack,
-    Card,
-    Text,
-} from "@shopify/polaris";
+import { Card, ChoiceList } from "@shopify/polaris";
 
 import shopifyServer, {
     authenticate,
@@ -23,16 +15,14 @@ import {
     getPromotion,
     updatePromotions,
 } from "~/framework/lib/helpers/metafields";
-import {
-    createFunctionalDiscount,
-    getFunctionId,
-} from "~/framework/lib/helpers/functionalDiscount";
+import { initFunctionalDiscount } from "~/framework/lib/helpers/functionalDiscount";
 import { useDiscountForm } from "~/framework/lib/helpers/hooks";
-import { getAppDiscountNodes } from "~/framework/lib/helpers/discounts";
 import { getAllTags } from "~/framework/components/form/TagPicker";
 import ProductPicker from "~/framework/components/form/ProductPicker";
 import DiscountSettingsCard from "~/framework/components/form/DiscountSettingsCard";
 import TextBox from "~/framework/components/form/TextBox";
+import PromotionMetadataCard from "~/framework/components/form/PromotionMetadataCard";
+import PromoPage from "~/framework/components/form/PromoPage";
 
 /**
  * Loads the data for the frequently bought together app.
@@ -59,20 +49,13 @@ export const loader = async ({ params, request }: ActionFunctionArgs) => {
     return json({ discount: returnData, tags });
 };
 
-/**
- * Generates a randomly generated ID.
- * @returns {string} The randomly generated ID.
- */
-const randomlyGeneratedId = () => {
-    return Math.random().toString(36).substr(2, 9);
-};
-
 // This is a server-side action that is invoked when the form is submitted.
 // It makes an admin GraphQL request to create a discount.
 export const action = async ({ params, request }: ActionFunctionArgs) => {
+    const promoName = "frequentlyBoughtTogether";
     // 1. get prerequisites from the request and params
     let { id } = params;
-    const { admin } = await shopifyServer.authenticate.admin(request);
+    const { admin, session } = await shopifyServer.authenticate.admin(request);
 
     // 2. Generate a random ID if it's a new discount.
     if (id === "new") {
@@ -82,41 +65,25 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     //2. get and parse form data
     const formData = await request.formData();
     const parsedDiscount = JSON.parse(String(formData.get("discount") || ""));
-
-    //3. Check if a functional discount exists, if not create one
-    const existingDiscount = await getAppDiscountNodes(admin);
-    const discountTitle = "Don't-Delete--AC-Promotion-Discount-Manager";
-
-    const discountManagerExists = existingDiscount
-        .map((discount: any) => {
-            return discount.discount.title === discountTitle;
-        })
-        .includes(true);
-    if (!discountManagerExists) {
-        const discountManager = {
-            ...parsedDiscount,
-            title: discountTitle,
-            type: "frequentlyBoughtTogether",
-        };
-        const functionId = await getFunctionId(admin, "upsellApp");
-
-        return createFunctionalDiscount({
-            admin,
-            functionId,
-            discount: discountManager,
-            namespace: NAMESPACE,
-            key: KEY,
-        });
-        //TODO: create discount for free shipping
-    }
-    //4. Save the discount in the metafields in the promotion
+    //3. Save the discount in the metafields in the promotion
     const promotionDiscount = {
         ...parsedDiscount,
-        title: parsedDiscount.title,
+        title:
+            parsedDiscount?.configuration?.metadata?.title ??
+            parsedDiscount.title,
         id: id,
-        type: "frequentlyBoughtTogether",
+        type: promoName,
     };
-    await updatePromotions(admin, promotionDiscount);
+    await updatePromotions(admin, session, promotionDiscount);
+    //4. Check if a functional discount exists, if not create one
+    await initFunctionalDiscount(
+        admin,
+        parsedDiscount,
+        NAMESPACE,
+        KEY,
+        "upsellApp",
+        promoName,
+    );
 
     return json({ status: "success" });
 };
@@ -124,7 +91,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 //------------------------------------CONFIGURE HERE------------------------------------
 const NAMESPACE = "$app:upsellApp";
 const KEY = "function-configuration";
-//----------------------------------END CONFIGURE HERE-----------------------------------
+//----------------------------------END CONFIGURE HERE
 
 export default function FrequentlyBoughtTogether() {
     //build discount data
@@ -143,133 +110,129 @@ export default function FrequentlyBoughtTogether() {
             numItems: number;
         };
         offerDiscount: { type: string; value: string; offerOnly: boolean };
+        metadata: {
+            title: string;
+            discountMessage: string;
+            appliesTo: string;
+            placement: string;
+            priority: number;
+        };
     }
+    const loaderConfig = loaderData?.discount?.configuration;
     const config: ConfigShape = {
         target: {
-            type:
-                loaderData?.discount?.configuration?.target?.type ?? "product",
-            value: loaderData?.discount?.configuration?.target?.value ?? [],
+            type: loaderConfig?.target?.type ?? "product",
+            value: loaderConfig?.target?.value ?? [],
         },
         offerItems: {
-            type:
-                loaderData?.discount?.configuration?.offerItems?.type ??
-                "product",
-            value: loaderData?.discount?.configuration?.offerItems?.value ?? [],
-            numItems:
-                loaderData?.discount?.configuration?.offerItems?.numItems ?? 1,
+            type: loaderConfig?.offerItems?.type ?? "product",
+            value: loaderConfig?.offerItems?.value ?? [],
+            numItems: loaderConfig?.offerItems?.numItems ?? 1,
         },
         offerDiscount: {
-            type:
-                loaderData?.discount?.configuration?.offerDiscount?.type ??
-                "percentage",
-            value:
-                loaderData?.discount?.configuration?.offerDiscount?.value ??
-                "0",
-            offerOnly:
-                loaderData?.discount?.configuration?.offerDiscount?.offerOnly ??
-                false,
+            type: loaderConfig?.offerDiscount?.type ?? "percentage",
+            value: loaderConfig?.offerDiscount?.value ?? "0",
+            offerOnly: loaderConfig?.offerDiscount?.offerOnly ?? false,
+        },
+        metadata: {
+            discountMessage: loaderConfig?.metadata?.discountMessage ?? "",
+            title: loaderConfig?.metadata?.title ?? "",
+            appliesTo: loaderConfig?.metadata?.appliesTo ?? "all",
+            placement: loaderConfig?.metadata?.placement ?? "productPage",
+            priority: loaderConfig?.metadata?.priority ?? 0,
         },
     };
-    //----------------------------------END CONFIGURE HERE-----------------------------------
 
+    //load form
     const { isNew, redirect, isLoading, errorBanner, fields, submit } =
         useDiscountForm(config);
-    const { discountTitle, combinesWith, configuration } = fields;
+    const { combinesWith, configuration } = fields;
+    //end load form
+
+    const nonEmptyFields = [
+        configuration?.metadata?.title,
+        configuration?.metadata?.discountMessage,
+    ];
+    //----------------------------------END CONFIGURE HERE
 
     return (
-        <Page
-            title={isNew ? "New discount" : "Edit discount"}
-            backAction={{
-                content: "Discounts",
-                onAction: () => onBreadcrumbAction(redirect, true),
-            }}
-            primaryAction={{
-                content: "Save",
-                onAction: submit,
-                loading: isLoading,
-            }}
+        <PromoPage
+            isNew={isNew}
+            redirect={redirect}
+            submit={submit}
+            isLoading={isLoading}
+            errorBanner={errorBanner}
+            nonEmptyFields={nonEmptyFields}
+            title={"Frequently Bought Together"}
+            subtitle={
+                "This promotion encourages customers to buy multiple products together by displaying a pack of products at a discounted price."
+            }
         >
-            <Layout>
-                {errorBanner}
-                <Layout.Section>
-                    <Form method="post">
-                        <BlockStack align="space-around" gap={"200"}>
-                            {isNew && (
-                                <Card>
-                                    <Text variant="headingMd" as="h2">
-                                        Frequently Bought Together
-                                    </Text>
-                                    <TextBox
-                                        label="Discount Title"
-                                        field={discountTitle}
-                                    />
-                                </Card>
-                            )}
-                            <ProductPicker
-                                type={configuration.target.type}
-                                value={configuration.target.value}
-                                tags={tags}
-                                label={"Target Products"}
-                            />
-                            <Card>
-                                <ProductPicker
-                                    type={configuration.offerItems.type}
-                                    value={configuration.offerItems.value}
-                                    tags={tags}
-                                    label="Offer Products"
-                                    isCard={false}
-                                />
-                                <TextBox
-                                    field={configuration.offerItems.numItems}
-                                    label="Number of Items"
-                                    variant="number"
-                                    minimum={1}
-                                    maximum={4}
-                                />
-                            </Card>
-                            <DiscountSettingsCard
-                                type={configuration.offerDiscount.type}
-                                value={configuration.offerDiscount.value}
-                                label="Discount Settings"
-                            />
-                            {/* TODO: Discount message to show in cart when discount is applied */}
-                            {/* TODO: Apply To Input
-                            Decide if to apply to the discount to all products or offer 
-                            products only */}
-                            {/* TODO:  */}
-                            {/* TODO: Priority:
-                            Number Used to decide how important this promo is if others of the
-                            same type are shown */}
-                            {/* TODO: Preview Image */}
-                            {/* TODO: Description of the promotion */}
-                            <div className="hidden">
-                                <CombinationCard
-                                    combinableDiscountTypes={combinesWith}
-                                    discountClass={DiscountClass.Product}
-                                    discountDescriptor={"Discount"}
-                                />
-                            </div>
-                        </BlockStack>
-                    </Form>
-                </Layout.Section>
-                <Layout.Section></Layout.Section>
-                <Layout.Section>
-                    <PageActions
-                        primaryAction={{
-                            content: "Save discount",
-                            onAction: submit,
-                            loading: isLoading,
-                        }}
-                        secondaryActions={[
-                            {
-                                content: "Discard",
-                                onAction: () =>
-                                    onBreadcrumbAction(redirect, true),
-                            },
-                        ]}
-                    />
-                </Layout.Section>
-            </Layout>
-        </Page>
+            {/* TODO: Preview Image */}
+            {/* TODO: Description of the promotion */}
+
+            <PromotionMetadataCard configuration={configuration} />
+
+            <ProductPicker
+                type={configuration.target.type}
+                value={configuration.target.value}
+                tags={tags}
+                label={"Target Products"}
+            />
+            <Card>
+                <ProductPicker
+                    type={configuration.offerItems.type}
+                    value={configuration.offerItems.value}
+                    tags={tags}
+                    label="Offer Products"
+                    isCard={false}
+                />
+                <TextBox
+                    field={configuration.offerItems.numItems}
+                    label="Number of Items"
+                    variant="number"
+                    minimum={1}
+                    maximum={4}
+                />
+            </Card>
+            <DiscountSettingsCard
+                type={configuration.offerDiscount.type}
+                value={configuration.offerDiscount.value}
+                label="Discount Settings"
+            >
+                <ChoiceList
+                    title="Applies To"
+                    choices={[
+                        { label: "All Products", value: "all" },
+                        {
+                            label: "Offer Products Only",
+                            value: "offer",
+                        },
+                    ]}
+                    selected={[configuration.metadata.appliesTo.value]}
+                    onChange={(val) => {
+                        configuration.metadata.appliesTo.onChange(val[0]);
+                    }}
+                />
+            </DiscountSettingsCard>
+
+            {/* TODO: Priority:
+                Number Used to decide how important this promo is if others of the
+                same type are shown */}
+            <div className="hidden">
+                <CombinationCard
+                    combinableDiscountTypes={combinesWith}
+                    discountClass={DiscountClass.Product}
+                    discountDescriptor={"Discount"}
+                />
+            </div>
+        </PromoPage>
     );
 }
+/**
+ * Generates a randomly generated ID.
+ * @returns {string} The randomly generated ID.
+ */
+const randomlyGeneratedId = () => {
+    return Math.random().toString(36).substr(2, 9);
+};

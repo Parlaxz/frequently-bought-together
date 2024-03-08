@@ -15,6 +15,8 @@ interface DiscountValues {
     startsAt: string;
     endsAt: string;
     configuration: any;
+    id: any;
+    type: any;
 }
 
 interface Promotion {
@@ -30,4 +32,6 @@ interface Field {
     value: any;
     onChange: Function;
     defaultValue: any;
+    dirty: boolean;
+    touched: boolean;
 }

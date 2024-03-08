@@ -16,11 +16,13 @@ function DiscountSettingsCard({
     value,
     freeShipping = false,
     label,
+    children,
 }: {
     type: Field;
     value: Field;
     freeShipping?: boolean;
     label?: string;
+    children?: React.ReactNode;
 }) {
     const choices = [
         {
@@ -71,6 +73,7 @@ function DiscountSettingsCard({
                     }}
                 />
                 {discountValueBox}
+                {children}
             </BlockStack>
         </Card>
     );

@@ -1,5 +1,7 @@
 import { json } from "@remix-run/react";
 import { DiscountMethod } from "@shopify/discount-app-components";
+import { getAppDiscountNodes, getFunctionalDiscountNodes } from "./discounts";
+import { getAppMetafields, getPromotions } from "./metafields";
 
 /**
  * Creates a functional discount in the shopify admin. The main helper function for
@@ -422,4 +424,62 @@ export const getFunctionId = async (admin: any, functionTitle: string) => {
     ).id;
     if (functionId) return functionId;
     else return null;
+};
+
+export const initFunctionalDiscount = async (
+    admin: any,
+    parsedDiscount: DiscountValues,
+    NAMESPACE: string,
+    KEY: string,
+    appName: string,
+    discountType: string,
+) => {
+    const existingDiscount = await getAppDiscountNodes(admin);
+    const discountTitle = "Don't-Delete--AC-Promotion-Discount-Manager";
+
+    const discountManagerExists = existingDiscount
+        .map((discount: any) => {
+            return discount.discount.title === discountTitle;
+        })
+        .includes(true);
+
+    if (!discountManagerExists) {
+        const discountManager = {
+            ...parsedDiscount,
+            title: discountTitle,
+            type: discountType,
+        };
+        const functionId = await getFunctionId(admin, appName);
+
+        return createFunctionalDiscount({
+            admin,
+            functionId,
+            discount: discountManager,
+            namespace: NAMESPACE,
+            key: KEY,
+        });
+        //TODO: create discount for free shipping
+    } else {
+        const functionId = await getFunctionId(admin, appName);
+
+        const functionalNodes = await getFunctionalDiscountNodes(admin);
+        const discount = functionalNodes.nodes.find(
+            (node: any) => node.discount.appDiscountType.title === "upsellApp",
+        );
+        const metafield = discount.metafields.nodes.find((node: any) => {
+            return node.key === "function-configuration";
+        });
+        const promotions = await getPromotions(admin);
+        parsedDiscount.configuration = promotions;
+
+        const metafieldId = metafield.id;
+        const functionDiscountData = {
+            admin,
+            functionId,
+            discount: parsedDiscount,
+            id: discount.discount.discountId,
+            metafieldId: metafieldId,
+        };
+        return updateFunctionalDiscount(functionDiscountData);
+    }
 };

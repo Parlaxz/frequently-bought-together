@@ -6,8 +6,16 @@ query RunInput {
         __typename
         ...on ProductVariant {
             id
+            product{
+                id
+            }
         }
       }
+      attribute(key: "_promotionData") {
+        key
+        value
+      }
+
     }
   }
   discountNode {
