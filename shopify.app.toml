@@ -2,7 +2,7 @@
 
 client_id = "5c9c18ba824b73d4b4e6300e03bffcf9"
 name = "frequently-bought-together"
-application_url = "https://fame-ohio-occurs-collections.trycloudflare.com"
+application_url = "https://fast-behaviour-aberdeen-sri.trycloudflare.com"
 embedded = true
 
 [build]
@@ -16,9 +16,9 @@ scopes = "read_discounts,unauthenticated_read_content,unauthenticated_read_produ
 
 [auth]
 redirect_urls = [
-  "https://fame-ohio-occurs-collections.trycloudflare.com/auth/callback",
-  "https://fame-ohio-occurs-collections.trycloudflare.com/auth/shopify/callback",
-  "https://fame-ohio-occurs-collections.trycloudflare.com/api/auth/callback"
+  "https://fast-behaviour-aberdeen-sri.trycloudflare.com/auth/callback",
+  "https://fast-behaviour-aberdeen-sri.trycloudflare.com/auth/shopify/callback",
+  "https://fast-behaviour-aberdeen-sri.trycloudflare.com/api/auth/callback"
 ]
 
 [webhooks]
