@@ -8,6 +8,7 @@ query RunInput {
             id
             product{
                 id
+                title
             }
         }
       }
