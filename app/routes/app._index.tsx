@@ -63,6 +63,7 @@ function PromotionsTable({ promotions }: { promotions: Promotion[] }) {
         singular: "promotion",
         plural: "promotions",
     };
+    //!--------------------Config Here--------------------
     const typeDict = {
         frequentlyBoughtTogether: "Frequently Bought Together",
         volumeDiscount: "Volume Discount",
@@ -71,6 +72,7 @@ function PromotionsTable({ promotions }: { promotions: Promotion[] }) {
         frequentlyBoughtTogether: "/app/frequently-bought-together",
         volumeDiscount: "/app/volume-discount",
     };
+    //!------------------End Config Here------------------
     const rowMarkup = promotions.map(({ id, title, type, priority }, index) => (
         <IndexTable.Row id={id} key={id} position={index}>
             <IndexTable.Cell>

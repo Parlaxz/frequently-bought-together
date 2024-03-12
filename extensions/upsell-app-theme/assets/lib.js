@@ -1,9 +1,11 @@
+//#region declarations
 const currProduct = window.currProduct;
 const storefrontToken = window.storefrontToken;
 const promotions = window.promotions;
 const shopUrl = window.shopUrl ?? window.ac_shopURL;
+//#endregion
 
-//-----------------Promotion Functions-----------------//
+//#region Promotion Management and Logic
 /**
  * Builds promotions based on the provided array of promotions.
  * @param {Array} promotions - The array of promotions to build.
@@ -11,8 +13,7 @@ const shopUrl = window.shopUrl ?? window.ac_shopURL;
  */
 const mainPromotionManager = async (promotions) => {
     console.log("running mainPromotionManager!");
-    //steps
-    //1. sort promotions by priority
+    //step 1. sort promotions by priority
     promotions = promotions.sort((a, b) => {
         return (
             a.configuration.metadata.priority -
@@ -21,7 +22,7 @@ const mainPromotionManager = async (promotions) => {
     });
 
     const isProductPage = window.location.pathname.includes("/products/");
-    //2. break the promotions apart to each type
+    //step 2. break the promotions apart to each type
 
     const promotionTypes = [
         {
@@ -190,8 +191,9 @@ const getOfferProducts = async (promotion) => {
     console.log("offerProducts!: ", offerProducts);
     return offerProducts;
 };
+//#endregion
 
-//-----------------API Functions-----------------//
+//#region API Functions
 const productFields = `
                         title
                         id
@@ -425,7 +427,9 @@ async function getProductsByTag(tag) {
     }
 }
 
-//-----------------Builder Functions-----------------//
+//#endregion
+
+//#region HTML Builder Functions
 function appendBelowAddToCart(parentElement, elementToAppend) {
     const placeAfter = (element, before) =>
         before.parentNode.insertBefore(element, before.nextSibling);
@@ -562,11 +566,10 @@ const insertFrequentlyBoughtTogether = (offerProducts, promotionId) => {
     itemIds.push(currProduct.id);
     addSubmissionListener("#fbt-form");
 };
-//-----------------Helper Functions-----------------//
-function gidToId(gid) {
-    if (typeof gid !== "string") return gid;
-    return gid.split("/").pop();
-}
+//#endregion
+
+//#region Add to Cart Helper Functions
+
 const addSubmissionListener = (formId, promotionId, itemIds) => {
     document.querySelector(formId).addEventListener("submit", function (e) {
         e.preventDefault();
@@ -699,7 +702,16 @@ const addToCart = async (formData) => {
         throw error;
     }
 };
-//-----------------Run -----------------//
+//#endregion
+
+//#region Utility Functions
+function gidToId(gid) {
+    if (typeof gid !== "string") return gid;
+    return gid.split("/").pop();
+}
+//#endregion
+
+//#region Main
 mainPromotionManager(promotions);
 
 customFetchInterceptor(async (response) => {
@@ -708,22 +720,24 @@ customFetchInterceptor(async (response) => {
 });
 console.log("end of lib.js!");
 
-//PromotionData shape
+//,PromotionData shape
 /**
- * {
- *      frequentlyBoughtTogether:{
- *              promotionId: number,
- *              itemIds: number[]
- *      },
- *     volumeDiscount:{
- *             promotionId: number,
- *     },
- *      addonDiscount:{
- *       promotionId: number,
- *              itemIds: number[]
- *     }
- *      collections: string[],
- *            tags: string[],
- *
- * }
+ *, {
+ *,      frequentlyBoughtTogether:{
+ *,              promotionId: number,
+ *,              itemIds: number[]
+ *,      },
+ *,     volumeDiscount:{
+ *,             promotionId: number,
+ *,     },
+ *,      addonDiscount:{
+ *,       promotionId: number,
+ *,              itemIds: number[]
+ *,     }
+ *,      collections: string[],
+ *,            tags: string[],
+ *,
+ *, }
  */
+
+//#endregion
