@@ -33,6 +33,14 @@ const mainPromotionManager = async (promotions) => {
             page: "product", //can be product, cart, popup, general
             function: insertFrequentlyBoughtTogether,
         },
+        {
+            type: "volumeDiscount",
+            promotions: promotions.filter(
+                (promotion) => promotion.type === "volumeDiscount",
+            ),
+            page: "product", //can be product, cart, popup, general
+            function: insertVolumeDiscount,
+        },
     ];
     //3. get the product collections and tags
     const collections = await getCollectionsForProduct(currProduct.handle);
@@ -46,6 +54,7 @@ const mainPromotionManager = async (promotions) => {
         },
         volumeDiscount: {
             promotionId: null,
+            itemIds: [],
         },
         addonDiscount: {
             promotionId: null,
@@ -68,15 +77,22 @@ const mainPromotionManager = async (promotions) => {
                     console.log("promotion triggered!", promotion);
                     //5. get the offer products for the triggered promotion and assign them to the promotionData
                     const offerProducts = await getOfferProducts(promotion);
+                    console.log(
+                        "🚀 ~ file: lib.js:80 ~ promotionTypes.forEach ~ offerProducts:",
+                        offerProducts,
+                    );
 
                     promotionData[promotionType.type].promotionId =
                         promotion.id;
-                    promotionData[promotionType.type].itemIds = [
-                        ...offerProducts.map((product) => product.id),
-                    ];
+                    if (offerProducts && offerProducts.length > 0) {
+                        promotionData[promotionType.type].itemIds = [
+                            ...offerProducts.map((product) => product.id),
+                        ];
+                    }
                     promotionData[promotionType.type].itemIds.push(
                         currProduct.id,
                     );
+                    console.log("promotionData: ", promotionData);
                     //6. run the promotion function to build the promotion and insert it into the page
                     promotionType.function(offerProducts, promotion.id);
                     break;
@@ -143,9 +159,16 @@ const getOfferProducts = async (promotion) => {
     // the issue is that they return arrays and choosing which product to display
     // is not clear
     //array of products, collections or tags
+    console.log(
+        "🚀 ~ file: lib.js:164 ~ getOfferProducts ~ !promotion?.configuration?.offerItems:",
+        !promotion?.configuration?.offerItems,
+    );
+    if (!promotion?.configuration?.offerItems) {
+        return [];
+    }
     const offerValue = promotion?.configuration?.offerItems?.value;
     //can be product or collection or tag
-    const offerType = promotion?.configuration?.offerItems.type;
+    const offerType = promotion?.configuration?.offerItems?.type;
 
     let offerProducts = [];
     const offerCollections = [];
@@ -564,41 +587,129 @@ const insertFrequentlyBoughtTogether = (offerProducts, promotionId) => {
         parseInt(product.id.split("/").pop()),
     );
     itemIds.push(currProduct.id);
-    addSubmissionListener("#fbt-form");
+    addSubmissionListener("#fbt-form", "fbt");
+};
+const insertVolumeDiscount = (offerProducts, promotionId) => {
+    // Create a form element for the volume discount section
+    const vdForm = document.createElement("form");
+    vdForm.action = "";
+    vdForm.id = "vd-form";
+    console.log(
+        "🚀 ~ file: lib.js:597 ~ insertVolumeDiscount ~ vdForm.id:",
+        vdForm.id,
+    );
+    const volumeData = promotions.find(
+        (promotion) => promotion.id === promotionId,
+    )?.configuration?.volumes;
+    console.log(
+        "🚀 ~ file: lib.js:604 ~ insertVolumeDiscount ~ volumeData:",
+        volumeData,
+    );
+
+    // Create a title element for the volume discount section
+    const title = document.createElement("h2");
+    title.innerHTML = "Buy more, Save more";
+    vdForm.appendChild(title);
+
+    // Create a container element for the product cards
+    const container = document.createElement("div");
+    container.classList.add("vd-container");
+    container.type = "radio";
+    vdForm.appendChild(container);
+    // show all the quanitities and their respective discounts as options in a form
+    volumeData.forEach((volume) => {
+        const quantity = volume.quantity;
+        const discount = volume.value;
+
+        // Create a radio button element
+        const radioBtn = document.createElement("input");
+        radioBtn.type = "radio";
+        radioBtn.name = "volumeDiscount"; // Set a common name for all radio buttons in the list
+        radioBtn.value = `${quantity}`; // Set the value as a combination of quantity and discount
+        // Create a label for the radio button to display quantity and discount
+        const label = document.createElement("label");
+        label.textContent = `Buy ${quantity} and save ${discount}%`;
+
+        // Append the radio button and label to the container
+        container.appendChild(radioBtn);
+        container.appendChild(label);
+
+        // Add a line break for better readability
+        container.appendChild(document.createElement("br"));
+    });
+
+    // Insert the "Add to Cart" button
+    insertAddToCartButton(container);
+
+    // Append the volume discount section to the product description
+    const body = document.querySelector("body");
+    appendBelowAddToCart(body, vdForm);
+
+    // Add event listener for form submission
+    const itemIds = [currProduct.id];
+    addSubmissionListener("#vd-form", "volume");
 };
 //#endregion
 
 //#region Add to Cart Helper Functions
 
-const addSubmissionListener = (formId, promotionId, itemIds) => {
+const addSubmissionListener = (formId, type) => {
     document.querySelector(formId).addEventListener("submit", function (e) {
         e.preventDefault();
+        let formData = {};
+        if (type === "fbt") {
+            // Get the selected variant for each selection in the form
+            const selectedOptions = Array.from(
+                document.querySelector(formId).elements,
+            )
+                .filter((el) => el.tagName === "SELECT")
+                .map((el) => el.options[el.selectedIndex].value);
 
-        // Get the selected variant for each selection in the form
-        const selectedOptions = Array.from(
-            document.querySelector(formId).elements,
-        )
-            .filter((el) => el.tagName === "SELECT")
-            .map((el) => el.options[el.selectedIndex].value);
+            // Create the form data to add items to the cart
+            formData = {
+                items: selectedOptions.map((id) => {
+                    return {
+                        id: id,
+                        quantity: 1,
+                        properties: {
+                            __promotionData: JSON.stringify(
+                                window.ac_promotionData,
+                            ),
+                        },
+                    };
+                }),
+                sections:
+                    "cart-items,cart-icon-bubble,cart-notification-button,cart-notification-product,cart-drawer",
+            };
+        } else if (type === "volume") {
+            // Get the selected quantity and discount from the form
+            const selectedQuantity = document.querySelector(
+                `${formId} input[name="volumeDiscount"]:checked`,
+            ).value;
+            console.log(
+                "🚀 ~ file: lib.js:689 ~ selectedQuantity:",
+                selectedQuantity,
+            );
 
-        // Create the form data to add items to the cart
-        let formData = {
-            items: selectedOptions.map((id) => {
-                return {
-                    id: id,
-                    quantity: 1,
-                    properties: {
-                        __promotionData: JSON.stringify(
-                            window.ac_promotionData,
-                        ),
+            // Create the form data to add items to the cart
+            formData = {
+                items: [
+                    {
+                        id: currProduct.variants[0].id,
+                        quantity: selectedQuantity,
+                        properties: {
+                            __promotionData: JSON.stringify(
+                                window.ac_promotionData,
+                            ),
+                        },
                     },
-                };
-            }),
-            sections:
-                "cart-items,cart-icon-bubble,cart-notification-button,cart-notification-product,cart-drawer",
-        };
+                ],
+                sections:
+                    "cart-items,cart-icon-bubble,cart-notification-button,cart-notification-product,cart-drawer",
+            };
+            console.log("🚀 ~ file: lib.js:692 ~ formData:", formData);
+        }
 
-        console.log("formData: ", formData);
         // Send a POST request to add items to the cart
         fetch(window.Shopify.routes.root + "cart/add.js", {
             method: "POST",
