@@ -101,7 +101,7 @@ export default function FrequentlyBoughtTogether() {
             nonEmptyFields={nonEmptyFields}
             title={"Frequently Bought Together"}
             subtitle={
-                "This promotion encourages customers to buy multiple products together by displaying a pack of products at a discounted price."
+                "Boost sales by showcasing complementary products at a discounted price, enticing customers to purchase multiple items together."
             }
         >
             <PromotionMetadataCard configuration={configuration} />

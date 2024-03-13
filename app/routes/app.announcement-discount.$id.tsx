@@ -7,16 +7,19 @@ import {
     CombinationCard,
     DiscountClass,
 } from "@shopify/discount-app-components";
+import { Card, ChoiceList } from "@shopify/polaris";
 import {
+    DiscountSettingsCard,
     ProductPicker,
     PromoPage,
     PromotionMetadataCard,
+    TextBox,
 } from "~/framework/components/components";
-import VolumeDiscountCard from "~/framework/components/form/VolumeDiscountCard";
 
 import { useDiscountForm } from "~/framework/lib/helpers/hooks";
 
 import type {
+    ConfigDiscount,
     ConfigMetadata,
     ProductSelection,
 } from "~/framework/lib/helpers/settingsPage";
@@ -41,10 +44,10 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 //!------------------------------------CONFIGURE HERE------------------------------------
 const NAMESPACE = "$app:upsellApp";
 const KEY = "function-configuration";
-const promoName = "volumeDiscount";
+const promoName = "announcementPromotion";
 //!----------------------------------END CONFIGURE HERE
 
-export default function VolumeDiscount() {
+export default function FrequentlyBoughtTogether() {
     //build discount data
     const loaderData: any = useLoaderData();
     const { tags } = loaderData;
@@ -52,11 +55,8 @@ export default function VolumeDiscount() {
     //!------------------------------------CONFIGURE HERE------------------------------------
     interface ConfigShape {
         target: ProductSelection;
-        volumes: {
-            type: "percentage" | "fixedAmount";
-            value: number;
-            quantity: number;
-        }[];
+        offerItems: ProductSelection;
+        offerDiscount: ConfigDiscount;
         metadata: ConfigMetadata;
     }
 
@@ -66,9 +66,16 @@ export default function VolumeDiscount() {
             type: loaderConfig?.target?.type ?? "product",
             value: loaderConfig?.target?.value ?? [],
         },
-        volumes: loaderData?.discount?.configuration?.volumes ?? [
-            { type: "percentage", value: 0, quantity: 1 },
-        ],
+        offerItems: {
+            type: loaderConfig?.offerItems?.type ?? "product",
+            value: loaderConfig?.offerItems?.value ?? [],
+            numItems: loaderConfig?.offerItems?.numItems ?? 1,
+        },
+        offerDiscount: {
+            type: loaderConfig?.offerDiscount?.type ?? "percentage",
+            value: loaderConfig?.offerDiscount?.value ?? "0",
+            offerOnly: loaderConfig?.offerDiscount?.offerOnly ?? false,
+        },
         metadata: getMetadata(loaderConfig?.metadata),
     };
 
@@ -92,9 +99,9 @@ export default function VolumeDiscount() {
             isLoading={isLoading}
             errorBanner={errorBanner}
             nonEmptyFields={nonEmptyFields}
-            title={"Volume Discount"}
+            title={"Frequently Bought Together"}
             subtitle={
-                "TODO: Add a description here. This will be visible to the customer."
+                "Create urgency and excitement with customizable messages for special offers on selected products or collections."
             }
         >
             <PromotionMetadataCard configuration={configuration} />
@@ -105,8 +112,42 @@ export default function VolumeDiscount() {
                 tags={tags}
                 label={"Target Products"}
             />
-            <VolumeDiscountCard volumes={configuration.volumes} />
-
+            <Card>
+                <ProductPicker
+                    type={configuration.offerItems.type}
+                    value={configuration.offerItems.value}
+                    tags={tags}
+                    label="Offer Products"
+                    isCard={false}
+                />
+                <TextBox
+                    field={configuration.offerItems.numItems}
+                    label="Number of Items"
+                    variant="number"
+                    minimum={1}
+                    maximum={4}
+                />
+            </Card>
+            <DiscountSettingsCard
+                type={configuration.offerDiscount.type}
+                value={configuration.offerDiscount.value}
+                label="Discount Settings"
+            >
+                <ChoiceList
+                    title="Applies To"
+                    choices={[
+                        { label: "All Products", value: "all" },
+                        {
+                            label: "Offer Products Only",
+                            value: "offer",
+                        },
+                    ]}
+                    selected={[configuration.metadata.appliesTo.value]}
+                    onChange={(val) => {
+                        configuration.metadata.appliesTo.onChange(val[0]);
+                    }}
+                />
+            </DiscountSettingsCard>
             <div className="hidden">
                 <CombinationCard
                     combinableDiscountTypes={combinesWith}

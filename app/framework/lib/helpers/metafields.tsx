@@ -134,7 +134,19 @@ export const updatePromotions = async (
 
     return response;
 };
-
+export const deletePromotion = async (admin: any, session: any, id: string) => {
+    const promotions = await getPromotions(admin);
+    const newPromotions = promotions.filter((p: any) => p.id !== id);
+    const metafields = {
+        namespace: "storage",
+        key: "promotions",
+        type: "json",
+        value: JSON.stringify(newPromotions),
+    };
+    const response = await setAppMetafields(admin, [metafields]);
+    initStorefrontTokens(admin, session);
+    return response;
+};
 export const initStorefrontTokens = async (admin: any, session: any) => {
     const appMetafields = await getAppMetafields(admin);
     const storefrontTokens = appMetafields?.edges?.find(
