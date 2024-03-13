@@ -30,7 +30,7 @@ function PromoPage({
     return (
         <>
             <Page
-                title={isNew ? "New discount" : title}
+                title={isNew ? `New ${title} discount` : title}
                 subtitle={subtitle}
                 backAction={{
                     content: "Discounts",

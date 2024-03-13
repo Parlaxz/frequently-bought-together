@@ -7,6 +7,7 @@ function PromotionMetadataCard({
     configuration: any;
     showPlacement?: boolean;
 }) {
+    console.log(configuration.metadata);
     return (
         <Card>
             {" "}

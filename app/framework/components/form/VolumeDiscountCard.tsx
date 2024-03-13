@@ -37,6 +37,7 @@ function VolumeDiscountCard({
     interface VolumeDiscount {
         type: "percentage" | "fixedAmount";
         value: number;
+        quantity: number;
     }
     const textBoxes = volumes.value.map(
         (volumeDiscount: VolumeDiscount, index: number) => {
@@ -47,7 +48,7 @@ function VolumeDiscountCard({
                             {"Teir " + (index + 1)}
                         </Text>
                     </div>
-                    <div className="grid grid-flow-col w-full gap-4 grid-cols-4">
+                    <div className="grid grid-flow-col w-full gap-4 grid-cols-5">
                         {" "}
                         <ChoiceList
                             title="Discount Type"
@@ -60,7 +61,7 @@ function VolumeDiscountCard({
                                 });
                             }}
                         />
-                        <div className="col-span-3">
+                        <div className="col-span-2">
                             {/*@ts-ignore */}
                             <TextField
                                 label={`Value ${index + 1}`}
@@ -79,6 +80,22 @@ function VolumeDiscountCard({
                                     fieldFuncs.update(volumes, index, {
                                         ...volumeDiscount,
                                         value: val,
+                                    });
+                                }}
+                                type="number"
+                            />
+                        </div>
+                        <div className="col-span-2">
+                            {/*@ts-ignore */}
+                            <TextField
+                                label={`Quantity ${index + 1}`}
+                                value={
+                                    volumeDiscount?.quantity?.toString() ?? "1"
+                                }
+                                onChange={(val) => {
+                                    fieldFuncs.update(volumes, index, {
+                                        ...volumeDiscount,
+                                        quantity: val,
                                     });
                                 }}
                                 type="number"
