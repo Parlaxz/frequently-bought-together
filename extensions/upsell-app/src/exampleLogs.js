@@ -58,7 +58,7 @@
  *, }
  */
 /**
- *!       promotions: [{
+ *!       storePromotions: [{
  *,               "title": "Collection Test",
  *,               "method": "Automatic",
  *,               "code": "",
