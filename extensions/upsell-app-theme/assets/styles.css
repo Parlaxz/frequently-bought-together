@@ -2,17 +2,14 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 20px 0;
-    padding: 20px;
+    margin: 14px 0;
+    padding: 0 10px;
     border: 1px solid #e5e5e5;
     width: 100%;
     min-width: fit-content;
-    min-height: 311px;
+    min-height: 256px;
 }
-.triggerPlusSymbol {
-    font-size: 30px;
-    margin: 0 20px;
-}
+
 .fbt-title {
     font-size: 18px;
     margin: 0 0 20px;
@@ -28,4 +25,95 @@
 }
 .hidden {
     display: none;
+}
+.upgrade-product-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin: 0 8px;
+    flex-grow: 1;
+    padding: 4px 12px;
+    margin: 8px 0;
+}
+.product-details {
+    font-size: 12px;
+    text-align: center;
+}
+.product-preview__title h3 {
+    font-size: 14px;
+    text-align: center;
+}
+.product-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 8px;
+    flex-grow: 1;
+    height: 236px;
+}
+.product-details h3 {
+    font-size: 14px;
+}
+.promo-add-to-cart {
+    display: flex;
+    width: 60%;
+    height: 36px;
+    justify-content: center;
+    align-items: center;
+    background-color: #080808;
+    color: white;
+    padding: 12px;
+    font-size: 18px;
+}
+
+.upgrade-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 20px 0;
+    border: 1px solid #e5e5e5;
+    width: 100%;
+    min-width: fit-content;
+}
+.upgrade-row:has(input[type="radio"]:checked) {
+    border: 2px solid #c1c1c1;
+}
+.upgrade-row:has(input[type="radio"]:checked) h3 {
+    font-weight: bold;
+}
+#fbt-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.variant-selector {
+    border: 1px solid #d5d5d5;
+    border-radius: 4px;
+    padding: 1px;
+    color: #333;
+}
+.triggerPlusSymbol {
+    margin-bottom: 112px;
+    font-size: 30px;
+    margin: 0 8px;
+}
+.price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.new-price {
+    font-size: 14px;
+    font-weight: bold;
+    color: #b40b0b;
+    margin-left: 6px;
+}
+.old-price {
+    font-size: 12px;
+    text-decoration: line-through;
 }

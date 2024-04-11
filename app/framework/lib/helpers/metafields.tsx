@@ -26,7 +26,7 @@ export const getAppMetafields = async (admin: any) => {
         `#graphql
                             query GetAppInstallationMetafields($ownerId: ID!) {
                                     appInstallation(id: $ownerId) {
-                                    metafields(first: 3) {
+                                    metafields(first: 100) {
                                     edges {
                                             node {
                                             namespace
@@ -130,7 +130,11 @@ export const updatePromotions = async (
         value: JSON.stringify(newPromotions),
     };
     const response = await setAppMetafields(admin, [metafields]);
-    initStorefrontTokens(admin, session);
+    try {
+        initStorefrontTokens(admin, session);
+    } catch (e) {
+        console.error(e);
+    }
 
     return response;
 };
@@ -149,20 +153,47 @@ export const deletePromotion = async (admin: any, session: any, id: string) => {
 };
 export const initStorefrontTokens = async (admin: any, session: any) => {
     const appMetafields = await getAppMetafields(admin);
-    const storefrontTokens = appMetafields?.edges?.find(
-        (edge: any) =>
+    const storefrontTokens = appMetafields?.edges?.find((edge: any) => {
+        console.log("edge namespace | key", edge.node.namespace, edge.node.key);
+        return (
             edge.node.namespace === "storage" &&
-            edge.node.key === "storefrontToken",
-    );
+            edge.node.key === "storefrontToken"
+        );
+    });
+    console.log("appMetafields", appMetafields);
+    console.log("storefrontTokens", storefrontTokens);
     if (!storefrontTokens) {
+        const raw_issued_tokens =
+            await admin.rest.resources.StorefrontAccessToken.all({
+                session: session,
+            });
+        const issued_tokens = await raw_issued_tokens.data;
+        const token = issued_tokens[0]?.access_token;
+        console.log("issued_token", issued_tokens[0]?.access_token);
+        if (token) {
+            const metafields = {
+                namespace: "storage",
+                key: "storefrontToken",
+                type: "json",
+                value: JSON.stringify({ access_token: token }),
+            };
+            await setAppMetafields(admin, [metafields]);
+            return;
+        }
+
         const storefront_access_token =
             new admin.rest.resources.StorefrontAccessToken({
                 session: session,
             });
         storefront_access_token.title = "storefrontToken";
-        await storefront_access_token.save({
-            update: true,
-        });
+        try {
+            await storefront_access_token.save({
+                update: true,
+            });
+        } catch (e: any) {
+            const data = await e.json();
+            console.error("Error creating storefront token", data);
+        }
         const access_token = storefront_access_token.access_token;
         const metafields = {
             namespace: "storage",

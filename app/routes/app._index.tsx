@@ -56,28 +56,33 @@ const promotionTypes = [
         title: "Volume Discount",
         url: "/app/volume-discount",
     },
-    {
-        type: "productAddons",
-        title: "Product Add-ons",
-        url: "/app/product-addons",
-    },
-    {
-        type: "bxgyDiscount",
-        title: "BXGY Discount",
-        url: "/app/bxgy-discount",
-    },
-    {
-        type: "announcementPromotion",
-        title: "Announcement Discount",
-        url: "/app/announcement-discount",
-    },
+    //     {
+    //         type: "productAddons",
+    //         title: "Product Add-ons",
+    //         url: "/app/product-addons",
+    //     },
+    //     {
+    //         type: "bxgyDiscount",
+    //         title: "BXGY Discount",
+    //         url: "/app/bxgy-discount",
+    //     },
+    //     {
+    //         type: "announcementPromotion",
+    //         title: "Announcement Discount",
+    //         url: "/app/announcement-discount",
+    //     },
     { type: "freeGift", title: "Free Gift", url: "/app/free-gift" },
-    { type: "upsurge", title: "Upsurge", url: "/app/upsurge" },
     {
-        type: "countdownTimer",
-        title: "Countdown Timer",
-        url: "/app/countdown-timer",
+        type: "upgradeDiscount",
+        title: "UpgradeDiscount",
+        url: "/app/upgradeDiscount",
     },
+
+    //     {
+    //         type: "countdownTimer",
+    //         title: "Countdown Timer",
+    //         url: "/app/countdown-timer",
+    //     },
 ];
 
 export default function Index() {

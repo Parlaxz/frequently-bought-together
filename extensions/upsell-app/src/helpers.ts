@@ -10,6 +10,7 @@ export function cleanGIDs(promotionsInCart: any) {
         frequentlyBoughtTogether: [],
         addonDiscount: [],
         volumeDiscount: [],
+        upgradeDiscount: [],
     };
 
     // Helper function to convert GIDs to integers
@@ -28,7 +29,12 @@ export function cleanGIDs(promotionsInCart: any) {
             itemIds: promo.itemIds.map(cleanGID),
         }),
     );
-
+    cleanedPromotions.upgradeDiscount = promotionsInCart.upgradeDiscount.map(
+        (promo: { promotionId: string; itemIds: any[] }) => ({
+            promotionId: promo.promotionId,
+            itemIds: promo.itemIds.map(cleanGID),
+        }),
+    );
     // No need to clean addonDiscount and volumeDiscount since they don't have itemIds in your example
 
     return cleanedPromotions;
@@ -113,7 +119,7 @@ export function processatcPromotionsMap(inputArray: any[]) {
                 currentItem.frequentlyBoughtTogether;
             const addonDiscount = currentItem.addonDiscount;
             const volumeDiscount = currentItem.volumeDiscount;
-
+            const upgradeDiscount = currentItem.upgradeDiscount;
             // Process frequentlyBoughtTogether promotions
             if (
                 frequentlyBoughtTogether &&
@@ -144,6 +150,17 @@ export function processatcPromotionsMap(inputArray: any[]) {
                     accumulator.addonDiscount.push(addonDiscount);
                 }
             }
+            if (upgradeDiscount && upgradeDiscount.promotionId) {
+                const existingUpgradeDiscount =
+                    accumulator.upgradeDiscount.find(
+                        (promo: any) =>
+                            promo.promotionId === upgradeDiscount.promotionId,
+                    );
+
+                if (!existingUpgradeDiscount) {
+                    accumulator.upgradeDiscount.push(upgradeDiscount);
+                }
+            }
 
             // Process volumeDiscount promotions
             if (volumeDiscount && volumeDiscount.promotionId) {
@@ -162,6 +179,7 @@ export function processatcPromotionsMap(inputArray: any[]) {
             frequentlyBoughtTogether: [],
             addonDiscount: [],
             volumeDiscount: [],
+            upgradeDiscount: [],
         },
     );
     return uniquePromotions;

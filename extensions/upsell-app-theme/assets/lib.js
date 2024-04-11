@@ -1,6 +1,7 @@
 //#region declarations
 const currProduct = window.currProduct;
 const storefrontToken = window.storefrontToken;
+console.log("Window.storefrontToken", storefrontToken);
 const promotions = window.promotions;
 const shopUrl = window.shopUrl ?? window.ac_shopURL;
 //#endregion
@@ -41,6 +42,30 @@ const mainPromotionManager = async (promotions) => {
             page: "product", //can be product, cart, popup, general
             function: insertVolumeDiscount,
         },
+        {
+            type: "upgradeDiscount",
+            promotions: promotions.filter(
+                (promotion) => promotion.type === "upgradeDiscount",
+            ),
+            page: "product", //can be product, cart, popup, general
+            function: insertUpgrade,
+        },
+        {
+            type: "freeGift",
+            promotions: promotions.filter(
+                (promotion) => promotion.type === "freeGift",
+            ),
+            page: "product", //can be product, cart, popup, general
+            function: insertFreeGift,
+        },
+        {
+            type: "productAddons",
+            promotions: promotions.filter(
+                (promotion) => promotion.type === "productAddons",
+            ),
+            page: "product", //can be product, cart, popup, general
+            function: insertProductAddons,
+        },
     ];
     //3. get the product collections and tags
     const collections = await getCollectionsForProduct(currProduct.handle);
@@ -60,6 +85,19 @@ const mainPromotionManager = async (promotions) => {
             promotionId: null,
             itemIds: [],
         },
+        upgradeDiscount: {
+            promotionId: null,
+            itemIds: [],
+        },
+        freeGift: {
+            promotionId: null,
+            itemIds: [],
+        },
+        productAddons: {
+            promotionId: null,
+            itemIds: [],
+        },
+
         collections: collections,
         tags: tags,
     };
@@ -94,7 +132,12 @@ const mainPromotionManager = async (promotions) => {
                     );
                     console.log("promotionData: ", promotionData);
                     //6. run the promotion function to build the promotion and insert it into the page
-                    promotionType.function(offerProducts, promotion.id);
+                    console.log("promotion", promotion);
+                    promotionType.function(
+                        offerProducts,
+                        promotion.id,
+                        promotion.configuration,
+                    );
                     break;
                 }
             }
@@ -147,7 +190,13 @@ async function isTriggerProduct(target, collections, tags) {
 
     return false;
 }
-
+const getDiscount = (configuration) => {
+    console.log("configuration: ", configuration);
+    if (configuration?.offerDiscount) {
+        return configuration?.offerDiscount;
+    }
+    return { amount: 0, type: "percentage" };
+};
 /**
  * Retrieves the offer products based on the given promotion.
  *
@@ -155,14 +204,7 @@ async function isTriggerProduct(target, collections, tags) {
  * @returns {Promise<Array>} - A promise that resolves to an array of offer products.
  */
 const getOfferProducts = async (promotion) => {
-    // ALOT of work needs to be done here for the collection and tag types
-    // the issue is that they return arrays and choosing which product to display
-    // is not clear
     //array of products, collections or tags
-    console.log(
-        "🚀 ~ file: lib.js:164 ~ getOfferProducts ~ !promotion?.configuration?.offerItems:",
-        !promotion?.configuration?.offerItems,
-    );
     if (!promotion?.configuration?.offerItems) {
         return [];
     }
@@ -175,17 +217,21 @@ const getOfferProducts = async (promotion) => {
 
     if (offerType === "collection") {
         const offerHandles = offerValue.map((value) => value.handle);
+        const offerCount = promotion?.configuration?.offerItems?.numItems;
+        console.log("offerCount: ", offerCount);
         for (const productHandle of offerHandles) {
             const product = await getCollectionByHandle(productHandle);
             offerCollections.push(product);
         }
-        offerProducts = offerCollections.map((collection) => {
-            if (
-                collection.products.edges[0].node.handle === currProduct.handle
-            ) {
-                return collection.products.edges[1].node;
+        offerCollections.forEach((collection) => {
+            for (let i = 0; offerProducts.length < offerCount; i++) {
+                if (
+                    collection.products.edges[i].node.handle !==
+                    currProduct.handle
+                ) {
+                    offerProducts.push(collection.products.edges[i].node);
+                }
             }
-            return collection.products.edges[0].node;
         });
     }
     if (offerType === "product") {
@@ -495,31 +541,62 @@ function appendBelowAddToCart(parentElement, elementToAppend) {
         placeAfter(appComponentContainer, formWithAction);
     }
 }
-function insertProductCard(
-    imgSrc,
-    imgAlt,
-    productTitle,
-    productPrice,
-    variants,
-    targetElement,
-) {
+function insertProductCard(args) {
+    let {
+        imgSrc,
+        imgAlt,
+        productTitle,
+        productPrice,
+        variants,
+        targetElement,
+        classData,
+        isGift,
+        discountAmount,
+    } = args;
+    if (!classData) {
+        classData = "product-card";
+    }
+    if (!isGift) {
+        isGift = false;
+    }
+    let newPrice = productPrice;
+    console.log("discountAmount: ", discountAmount);
+    if (discountAmount?.type === "percentage") {
+        newPrice = `${(
+            productPrice -
+            productPrice * (discountAmount.value / 100)
+        ).toFixed(2)}`;
+    } else if (discountAmount?.type === "fixed") {
+        newPrice = `${(productPrice - discountAmount.value).toFixed(2)}`;
+    }
     const card = document.createElement("div");
-    card.classList.add("product-card");
-    card.innerHTML = ` <div class="product-preview">
-        <div class="product-preview__image">
-                <img src="${imgSrc}" alt="${imgAlt}" width="100" height="100"/>
-                </div>
-                <div class="product-preview__details">
-                <h3>${productTitle}</h3>
-                <p>${productPrice}</p>
-                </div>
-                </div>`;
-    card.appendChild(insertvariantSelector(variants));
+    card.classList.add(classData);
+
+    const productPreview = document.createElement("div");
+    productPreview.classList.add("product-preview-img-title");
+    productPreview.innerHTML = `
+                <div class="product-preview__image">
+                        <img src="${imgSrc}" alt="${imgAlt}" width="100" height="100"/>
+                        </div>
+                        <div class="product-preview__title">
+                        <h3>${productTitle}</h3>
+                        </div>
+                        </div>
+                        `;
+    card.appendChild(productPreview);
+    const productDetails = document.createElement("div");
+    productDetails.classList.add("product-details");
+    productDetails.innerHTML = `
+        <div class ="price-row"><p class="old-price">$${productPrice}</p><p class="new-price">$${newPrice}</p></div>
+        `;
+    productDetails.appendChild(insertvariantSelector(variants));
+    card.appendChild(productDetails);
+
     targetElement.appendChild(card);
 }
 function insertAddToCartButton(targetElement) {
     const button = document.createElement("button");
-    button.classList.add("add-to-cart");
+    button.classList.add("promo-add-to-cart");
     button.innerHTML = "Add to Cart";
     targetElement.appendChild(button);
 }
@@ -531,31 +608,42 @@ function insertvariantSelector(variants) {
     });
     return variantSelector;
 }
-const insertFrequentlyBoughtTogether = (offerProducts, promotionId) => {
+const insertFrequentlyBoughtTogether = (
+    offerProducts,
+    promotionId,
+    configuration,
+) => {
     // Create a form element for the frequently bought together section
     const fbtForm = document.createElement("form");
     fbtForm.action = "";
     fbtForm.id = "fbt-form";
+    buildStyles(configuration.styles, "#fbt-form");
 
     // Create a title element for the frequently bought together section
     const title = document.createElement("h2");
-    title.innerHTML = "Frequently Bought Together";
+    console.log("configuration: ", configuration);
+    title.innerHTML = configuration.texts.containerTitle; //! containerTitle.value needed if in snippetPreview
     fbtForm.appendChild(title);
 
     // Create a container element for the product cards
     const container = document.createElement("div");
     container.classList.add("fbt-container");
     fbtForm.appendChild(container);
+    console.log("currProduct: ", currProduct);
 
+    console.log("offerProducts: ", offerProducts);
     // Insert the product card for the current product
-    insertProductCard(
-        currProduct?.media[0]?.src,
-        currProduct?.media[0]?.alt,
-        currProduct?.title,
-        `$${(currProduct?.variants[0]?.price / 100).toFixed(2)}`,
-        currProduct?.variants,
-        container,
-    );
+    const discountAmount = getDiscount(configuration);
+
+    insertProductCard({
+        imgSrc: currProduct?.media[0]?.src,
+        imgAlt: currProduct?.media[0]?.alt,
+        productTitle: currProduct?.title,
+        productPrice: `${(currProduct?.variants[0]?.price / 100).toFixed(2)}`,
+        variants: currProduct?.variants,
+        targetElement: container,
+        discountAmount: discountAmount,
+    });
 
     // Insert the product cards for the offer products
     offerProducts.forEach((product) => {
@@ -564,17 +652,254 @@ const insertFrequentlyBoughtTogether = (offerProducts, promotionId) => {
             container.innerHTML += `<div class="triggerPlusSymbol">+</div>`;
 
             // Insert the product card for the offer product
-            insertProductCard(
-                product.featuredImage.url,
-                product.featuredImage.altText,
-                product.title,
-                product.variants.edges[0].node.price.amount,
-                product.variants.edges.map((variant) => variant.node),
-                container,
-            );
+            insertProductCard({
+                imgSrc: product.featuredImage.url,
+                imgAlt: product.featuredImage.altText,
+                productTitle: product.title,
+                productPrice: product.variants.edges[0].node.price.amount,
+                variants: product.variants.edges.map((variant) => variant.node),
+                targetElement: container,
+                discountAmount: discountAmount,
+            });
         }
     });
 
+    // Insert the "Add to Cart" button
+    insertAddToCartButton(fbtForm);
+
+    // Append the frequently bought together section to the product description
+    const body = document.querySelector("body");
+    appendBelowAddToCart(body, fbtForm);
+
+    // Add event listener for form submission
+    const itemIds = offerProducts.map((product) =>
+        parseInt(product.id.split("/").pop()),
+    );
+    itemIds.push(currProduct.id);
+    addSubmissionListener("#fbt-form", "fbt");
+};
+const insertProductAddons = (offerProducts, promotionId) => {
+    // Create a form element for the frequently bought together section
+    const fbtForm = document.createElement("form");
+    fbtForm.action = "";
+    fbtForm.id = "fbt-form";
+
+    // Create a title element for the frequently bought together section
+    const title = document.createElement("h2");
+    title.innerHTML = "Product Addons";
+    fbtForm.appendChild(title);
+
+    // Create a container element for the product cards
+    const container = document.createElement("div");
+    container.classList.add("fbt-container");
+    fbtForm.appendChild(container);
+
+    // Insert the product card for the current product
+    insertProductCard({
+        imgSrc: currProduct?.media[0]?.src,
+        imgAlt: currProduct?.media[0]?.alt,
+        productTitle: currProduct?.title,
+        productPrice: `$${(currProduct?.variants[0]?.price / 100).toFixed(2)}`,
+        variants: currProduct?.variants,
+        targetElement: container,
+    });
+
+    // Insert the product cards for the offer products
+    offerProducts.forEach((product) => {
+        if (product) {
+            // Add a plus symbol before each offer product card
+            container.innerHTML += `<div class="triggerPlusSymbol">+</div>`;
+
+            // Insert the product card for the offer product
+            insertProductCard({
+                imgSrc: product.featuredImage.url,
+                imgAlt: product.featuredImage.altText,
+                productTitle: product.title,
+                productPrice: product.variants.edges[0].node.price.amount,
+                variants: product.variants.edges.map((variant) => variant.node),
+                targetElement: container,
+            });
+        }
+    });
+
+    // Insert the "Add to Cart" button
+    insertAddToCartButton(container);
+
+    // Append the frequently bought together section to the product description
+    const body = document.querySelector("body");
+    appendBelowAddToCart(body, fbtForm);
+
+    // Add event listener for form submission
+    const itemIds = offerProducts.map((product) =>
+        parseInt(product.id.split("/").pop()),
+    );
+    itemIds.push(currProduct.id);
+    addSubmissionListener("#fbt-form", "fbt");
+};
+const insertUpgrade = (offerProducts, promotionId) => {
+    // Create a form element for the frequently bought together section
+    const fbtForm = document.createElement("form");
+    fbtForm.action = "";
+    fbtForm.id = "ug-form";
+
+    // Create a title element for the frequently bought together section
+    const title = document.createElement("h2");
+    title.innerHTML = "Upgrade";
+    fbtForm.appendChild(title);
+
+    // Create a container element for the product cards
+    const container = document.createElement("div");
+    container.classList.add("ug-container");
+    fbtForm.appendChild(container);
+
+    // Insert the product cards for the offer products
+    offerProducts.forEach((product) => {
+        if (product) {
+            // Add a plus symbol before each offer product card
+
+            // Insert the product card for the offer product
+            const option = document.createElement("input");
+            option.type = "radio";
+            option.name = "upgradeProduct";
+            option.value = product.id;
+            option.text = product.title;
+            option.id = product.id;
+            const upgradeRow = document.createElement("div");
+            upgradeRow.classList.add("upgrade-row");
+            upgradeRow.appendChild(option);
+
+            insertProductCard({
+                imgSrc: product.featuredImage.url,
+                imgAlt: product.featuredImage.altText,
+                productTitle: product.title,
+                productPrice: product.variants.edges[0].node.price.amount,
+                variants: product.variants.edges.map((variant) => variant.node),
+                targetElement: upgradeRow,
+                classData: "upgrade-product-card",
+                discountAmount: 0,
+            });
+            container.appendChild(upgradeRow);
+        }
+    });
+
+    // Insert the "Add to Cart" button
+    insertAddToCartButton(container);
+
+    // Append the frequently bought together section to the product description
+    const body = document.querySelector("body");
+    appendBelowAddToCart(body, fbtForm);
+
+    // Add event listener for form submission
+    const itemIds = offerProducts.map((product) =>
+        parseInt(product.id.split("/").pop()),
+    );
+    itemIds.push(currProduct.id);
+    addSubmissionListener("#ug-form", "ug");
+};
+
+const buildStyles = (styles, containerClass) => {
+    console.log("styles: ", styles);
+    console.log("containerClass: ", containerClass);
+    const styleClasses = styles.classes;
+    const styleTags = styles.tags;
+    const styleIds = styles.ids;
+
+    const currentStyle = document.getElementById("customACStyles");
+    const styleSheet = document.createElement("style");
+    styleSheet.type = "text/css";
+    styleSheet.id = "customACStyles";
+    console.log("styleSheet: ", styleSheet);
+    console.log("currentStyle: ", currentStyle);
+
+    let styleString = "";
+    if (styleClasses) {
+        for (const [key, value] of Object.entries(styleClasses)) {
+            console.log("key: ", key);
+            console.log("value: ", value);
+            styleString += `${containerClass} .${key} {`;
+            for (const [prop, propValue] of Object.entries(value)) {
+                styleString += `${prop}: ${propValue};`;
+            }
+            styleString += "}";
+        }
+
+        if (styleTags) {
+            for (const [key, value] of Object.entries(styleTags)) {
+                styleString += `${containerClass} ${key.toLowerCase()} {`;
+                for (const [prop, propValue] of Object.entries(value)) {
+                    styleString += `${prop}: ${propValue};`;
+                }
+                styleString += "}";
+            }
+        }
+
+        if (styleIds) {
+            for (const [key, value] of Object.entries(styleIds)) {
+                styleString += `${containerClass} #${key} {`;
+                for (const [prop, propValue] of Object.entries(value)) {
+                    styleString += `${prop}: ${propValue};`;
+                }
+                styleString += "}";
+            }
+        }
+
+        styleSheet.innerHTML = styleString;
+        console.log("styleSheet: ", styleSheet);
+    }
+
+    if (currentStyle) {
+        currentStyle.innerHTML = styleSheet.innerHTML;
+    } else {
+        document.head.appendChild(styleSheet);
+    }
+};
+
+const insertFreeGift = (offerProducts, promotionId) => {
+    // Create a form element for the frequently bought together section
+    const fbtForm = document.createElement("form");
+    fbtForm.action = "";
+    fbtForm.id = "fbt-form";
+
+    // Create a title element for the frequently bought together section
+    const title = document.createElement("h2");
+    title.innerHTML = "Free Gift";
+    fbtForm.appendChild(title);
+
+    // Create a container element for the product cards
+    const container = document.createElement("div");
+    container.classList.add("fbt-container");
+    fbtForm.appendChild(container);
+
+    // Insert the product card for the current product
+    insertProductCard({
+        imgSrc: currProduct?.media[0]?.src,
+        altText: currProduct?.media[0]?.alt,
+        productTitle: currProduct?.title,
+        productPrice: `$${(currProduct?.variants[0]?.price / 100).toFixed(2)}`,
+        variants: currProduct?.variants,
+        targetElement: container,
+        classData: "product-card",
+        isGift: true,
+    });
+
+    // Insert the product cards for the offer products
+    offerProducts.forEach((product) => {
+        if (product) {
+            // Add a plus symbol before each offer product card
+            container.innerHTML += `<div class="triggerPlusSymbol">+</div>`;
+
+            // Insert the product card for the offer product
+            insertProductCard({
+                imgSrc: product.featuredImage.url,
+                altText: product.title,
+                productTitle: product.title,
+                productPrice: product.variants.edges[0].node.price.amount,
+                variants: product.variants.edges.map((variant) => variant.node),
+                targetElement: container,
+            });
+        }
+    });
+    console.log("container: ", container);
     // Insert the "Add to Cart" button
     insertAddToCartButton(container);
 
@@ -594,17 +919,10 @@ const insertVolumeDiscount = (offerProducts, promotionId) => {
     const vdForm = document.createElement("form");
     vdForm.action = "";
     vdForm.id = "vd-form";
-    console.log(
-        "🚀 ~ file: lib.js:597 ~ insertVolumeDiscount ~ vdForm.id:",
-        vdForm.id,
-    );
+
     const volumeData = promotions.find(
         (promotion) => promotion.id === promotionId,
     )?.configuration?.volumes;
-    console.log(
-        "🚀 ~ file: lib.js:604 ~ insertVolumeDiscount ~ volumeData:",
-        volumeData,
-    );
 
     // Create a title element for the volume discount section
     const title = document.createElement("h2");
@@ -646,7 +964,6 @@ const insertVolumeDiscount = (offerProducts, promotionId) => {
     appendBelowAddToCart(body, vdForm);
 
     // Add event listener for form submission
-    const itemIds = [currProduct.id];
     addSubmissionListener("#vd-form", "volume");
 };
 //#endregion
@@ -657,6 +974,7 @@ const addSubmissionListener = (formId, type) => {
     document.querySelector(formId).addEventListener("submit", function (e) {
         e.preventDefault();
         let formData = {};
+        //!TYPE 1: FBT
         if (type === "fbt") {
             // Get the selected variant for each selection in the form
             const selectedOptions = Array.from(
@@ -681,7 +999,9 @@ const addSubmissionListener = (formId, type) => {
                 sections:
                     "cart-items,cart-icon-bubble,cart-notification-button,cart-notification-product,cart-drawer",
             };
-        } else if (type === "volume") {
+        }
+        //! TYPE 2: VOLUME
+        else if (type === "volume") {
             // Get the selected quantity and discount from the form
             const selectedQuantity = document.querySelector(
                 `${formId} input[name="volumeDiscount"]:checked`,
@@ -695,7 +1015,7 @@ const addSubmissionListener = (formId, type) => {
             formData = {
                 items: [
                     {
-                        id: currProduct.variants[0].id,
+                        id: currProduct.variants[0].id, //TODO add logic to get the correct variant ID when there are multiple options available
                         quantity: selectedQuantity,
                         properties: {
                             __promotionData: JSON.stringify(
@@ -709,7 +1029,33 @@ const addSubmissionListener = (formId, type) => {
             };
             console.log("🚀 ~ file: lib.js:692 ~ formData:", formData);
         }
-
+        //! TYPE 3: UPGRADE
+        else if (type === "ug") {
+            // Get the selected variant for each selection in the form
+            const selectedRow = document
+                .querySelector(`${formId} input[name="upgradeProduct"]:checked`)
+                .parentElement.querySelector(".variant-selector");
+            console.log("selectedRow: ", selectedRow);
+            const selectedOption =
+                selectedRow.options[selectedRow.selectedIndex].value;
+            console.log("selectedOption: ", selectedOption);
+            formData = {
+                items: [
+                    {
+                        id: selectedOption,
+                        quantity: 1,
+                        properties: {
+                            __promotionData: JSON.stringify(
+                                window.ac_promotionData,
+                            ),
+                        },
+                    },
+                ],
+                sections:
+                    "cart-items,cart-icon-bubble,cart-notification-button,cart-notification-product,cart-drawer",
+            };
+            console.log("🚀 ~ file: lib.js:692 ~ formData:", formData);
+        }
         // Send a POST request to add items to the cart
         fetch(window.Shopify.routes.root + "cart/add.js", {
             method: "POST",

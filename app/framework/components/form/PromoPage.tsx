@@ -20,7 +20,6 @@ function PromoPage({
     children: any;
     errorBanner: any;
     nonEmptyFields: Field[];
-
     title: string;
     subtitle: string;
 }) {
@@ -32,9 +31,10 @@ function PromoPage({
             <Page
                 title={isNew ? `New ${title} discount` : title}
                 subtitle={subtitle}
+                fullWidth
                 backAction={{
                     content: "Discounts",
-                    onAction: () => onBreadcrumbAction(redirect, true),
+                    onAction: () => onBreadcrumbAction(redirect, false),
                 }}
                 primaryAction={{
                     content: "Save",

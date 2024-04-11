@@ -203,46 +203,50 @@ function TagPicker({
 export const getAllTags = async (storefront: any) => {
     const tags: string[] = [];
 
-    let response = await storefront.graphql(`
-    	#graphql
-     query {
-            productTags(first: 250) {
-              edges {
-                node 
-              }
-              pageInfo{
-                hasNextPage
-                endCursor
-              }
-            }
-          }
-    `);
-
-    let responseData = await response.json();
-
-    responseData.data.productTags.edges.forEach((tag: any) => {
-        tags.push(tag.node);
-    });
-    while (responseData.data.productTags.pageInfo.hasNextPage) {
-        const cursor = response.data.productTags.pageInfo.endCursor;
-        response = await storefront.graphql(`
-        {
-            productTags(first: 250, after: "${cursor}") {
-              edges {
-                node {
-                  name
+    try {
+        let response = await storefront.graphql(`
+                #graphql
+         query {
+                productTags(first: 250) {
+                  edges {
+                    node 
+                  }
+                  pageInfo{
+                    hasNextPage
+                    endCursor
+                  }
                 }
               }
-              pageInfo{
-                hasNextPage
-              }
-            }
-          }
         `);
-        responseData = await response.json();
+
+        let responseData = await response.json();
+
         responseData.data.productTags.edges.forEach((tag: any) => {
             tags.push(tag.node);
         });
+        while (responseData.data.productTags.pageInfo.hasNextPage) {
+            const cursor = response.data.productTags.pageInfo.endCursor;
+            response = await storefront.graphql(`
+            {
+                productTags(first: 250, after: "${cursor}") {
+                  edges {
+                    node {
+                      name
+                    }
+                  }
+                  pageInfo{
+                    hasNextPage
+                  }
+                }
+              }
+            `);
+            responseData = await response.json();
+            responseData.data.productTags.edges.forEach((tag: any) => {
+                tags.push(tag.node);
+            });
+        }
+    } catch (e) {
+        console.error("Error fetching tags\n Error:", e);
     }
     return tags;
 };

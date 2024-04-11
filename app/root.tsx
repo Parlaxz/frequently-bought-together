@@ -8,9 +8,10 @@ import {
 } from "@remix-run/react";
 import type { LinksFunction } from "@remix-run/node";
 import stylesheet from "~/styles.css";
-
+import discountStyles from "extensions/upsell-app-theme/assets/styles.css";
 export const links: LinksFunction = () => [
     { rel: "stylesheet", href: stylesheet },
+    { rel: "stylesheet", href: discountStyles },
 ];
 export default function App() {
     return (
@@ -26,6 +27,7 @@ export default function App() {
                     rel="stylesheet"
                     href="https://cdn.shopify.com/static/fonts/inter/v4/styles.css"
                 />
+
                 <Meta />
                 <Links />
             </head>

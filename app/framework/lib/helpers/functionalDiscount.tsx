@@ -417,13 +417,18 @@ export const getFunctionId = async (admin: any, functionTitle: string) => {
                     }
               }
               `;
-    const response = await admin.graphql(query);
-    const data = await response.json();
-    const functionId = data.data.shopifyFunctions.nodes.find(
-        (node: any) => node.title === functionTitle,
-    ).id;
-    if (functionId) return functionId;
-    else return null;
+    try {
+        const response = await admin.graphql(query);
+        const data = await response.json();
+        const functionId = data.data.shopifyFunctions.nodes.find(
+            (node: any) => node.title === functionTitle,
+        ).id;
+        if (functionId) return functionId;
+        else return null;
+    } catch (e) {
+        console.log(e);
+        return null;
+    }
 };
 
 export const initFunctionalDiscount = async (
@@ -442,44 +447,53 @@ export const initFunctionalDiscount = async (
             return discount.discount.title === discountTitle;
         })
         .includes(true);
+    try {
+        if (!discountManagerExists) {
+            const discountManager = {
+                ...parsedDiscount,
+                title: discountTitle,
+                type: discountType,
+            };
+            const functionId = await getFunctionId(admin, appName);
 
-    if (!discountManagerExists) {
-        const discountManager = {
-            ...parsedDiscount,
-            title: discountTitle,
-            type: discountType,
-        };
-        const functionId = await getFunctionId(admin, appName);
+            return createFunctionalDiscount({
+                admin,
+                functionId,
+                discount: discountManager,
+                namespace: NAMESPACE,
+                key: KEY,
+            });
+            //TODO: create discount for free shipping
+        } else {
+            const functionalNodes = await getFunctionalDiscountNodes(admin);
 
-        return createFunctionalDiscount({
-            admin,
-            functionId,
-            discount: discountManager,
-            namespace: NAMESPACE,
-            key: KEY,
-        });
-        //TODO: create discount for free shipping
-    } else {
-        const functionId = await getFunctionId(admin, appName);
+            console.log("functionalNodes", functionalNodes);
+            const discount = functionalNodes.nodes.find(
+                (node: any) =>
+                    node.discount.appDiscountType.title === "upsellApp",
+            );
+            console.log("1");
+            const functionId = await getFunctionId(admin, appName);
+            console.log("2");
+            const metafield = discount.metafields.nodes.find((node: any) => {
+                return node.key === "function-configuration";
+            });
 
-        const functionalNodes = await getFunctionalDiscountNodes(admin);
-        const discount = functionalNodes.nodes.find(
-            (node: any) => node.discount.appDiscountType.title === "upsellApp",
-        );
-        const metafield = discount.metafields.nodes.find((node: any) => {
-            return node.key === "function-configuration";
-        });
-        const promotions = await getPromotions(admin);
-        parsedDiscount.configuration = promotions;
+            const promotions = await getPromotions(admin);
+            parsedDiscount.configuration = promotions;
 
-        const metafieldId = metafield.id;
-        const functionDiscountData = {
-            admin,
-            functionId,
-            discount: parsedDiscount,
-            id: discount.discount.discountId,
-            metafieldId: metafieldId,
-        };
-        return updateFunctionalDiscount(functionDiscountData);
+            const metafieldId = metafield.id;
+            const functionDiscountData = {
+                admin,
+                functionId,
+                discount: parsedDiscount,
+                id: discount.discount.discountId,
+                metafieldId: metafieldId,
+            };
+            return updateFunctionalDiscount(functionDiscountData);
+        }
+    } catch (e) {
+        console.log(e);
+        return json({ status: "error" });
     }
 };

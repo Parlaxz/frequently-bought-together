@@ -7,12 +7,14 @@ import {
     CombinationCard,
     DiscountClass,
 } from "@shopify/discount-app-components";
+import SnippetPreview from "~/framework/components/Snippet/SnippetPreview";
 import {
     ProductPicker,
     PromoPage,
     PromotionMetadataCard,
 } from "~/framework/components/components";
 import VolumeDiscountCard from "~/framework/components/form/VolumeDiscountCard";
+import { getStyling } from "~/framework/components/form/getStyling";
 
 import { useDiscountForm } from "~/framework/lib/helpers/hooks";
 
@@ -58,6 +60,7 @@ export default function VolumeDiscount() {
             quantity: number;
         }[];
         metadata: ConfigMetadata;
+        styles: object;
     }
 
     const loaderConfig = loaderData?.discount?.configuration;
@@ -70,6 +73,11 @@ export default function VolumeDiscount() {
             { type: "percentage", value: 0, quantity: 1 },
         ],
         metadata: getMetadata(loaderConfig?.metadata),
+        styles: {
+            classes: getStyling(loaderConfig, "class", ["promo-add-to-cart"]),
+
+            tags: getStyling(loaderConfig, "tag", ["H2"]),
+        },
     };
 
     //load form
@@ -97,6 +105,10 @@ export default function VolumeDiscount() {
                 "TODO: Add a description here. This will be visible to the customer."
             }
         >
+            <SnippetPreview
+                configuration={configuration}
+                type="volume-discount"
+            />
             <PromotionMetadataCard configuration={configuration} />
 
             <ProductPicker

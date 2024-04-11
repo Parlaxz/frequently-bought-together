@@ -8,6 +8,7 @@ import {
     DiscountClass,
 } from "@shopify/discount-app-components";
 import { Card, ChoiceList } from "@shopify/polaris";
+import SnippetPreview from "~/framework/components/Snippet/SnippetPreview";
 import {
     DiscountSettingsCard,
     ProductPicker,
@@ -15,6 +16,7 @@ import {
     PromotionMetadataCard,
     TextBox,
 } from "~/framework/components/components";
+import { getStyling } from "~/framework/components/form/getStyling";
 
 import { useDiscountForm } from "~/framework/lib/helpers/hooks";
 
@@ -44,7 +46,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 //!------------------------------------CONFIGURE HERE------------------------------------
 const NAMESPACE = "$app:upsellApp";
 const KEY = "function-configuration";
-const promoName = "upsurge";
+const promoName = "upgradeDiscount";
 //!----------------------------------END CONFIGURE HERE
 
 export default function FrequentlyBoughtTogether() {
@@ -58,6 +60,7 @@ export default function FrequentlyBoughtTogether() {
         offerItems: ProductSelection;
         offerDiscount: ConfigDiscount;
         metadata: ConfigMetadata;
+        styles: object;
     }
 
     const loaderConfig = loaderData?.discount?.configuration;
@@ -71,12 +74,24 @@ export default function FrequentlyBoughtTogether() {
             value: loaderConfig?.offerItems?.value ?? [],
             numItems: loaderConfig?.offerItems?.numItems ?? 1,
         },
+
         offerDiscount: {
             type: loaderConfig?.offerDiscount?.type ?? "percentage",
             value: loaderConfig?.offerDiscount?.value ?? "0",
             offerOnly: loaderConfig?.offerDiscount?.offerOnly ?? false,
         },
         metadata: getMetadata(loaderConfig?.metadata),
+        styles: {
+            classes: getStyling(loaderConfig, "class", [
+                "promo-add-to-cart",
+                "triggerPlusSymbol",
+                "fbt-container",
+                "old-price",
+                "new-price",
+            ]),
+
+            tags: getStyling(loaderConfig, "tag", ["H2", "IMG", "H3"]),
+        },
     };
 
     //load form
@@ -104,6 +119,10 @@ export default function FrequentlyBoughtTogether() {
                 "Motivate increased spending and satisfaction with enticing benefits through Upsurge promotions."
             }
         >
+            <SnippetPreview
+                configuration={configuration}
+                type="upgrade-discount"
+            />
             <PromotionMetadataCard configuration={configuration} />
 
             <ProductPicker

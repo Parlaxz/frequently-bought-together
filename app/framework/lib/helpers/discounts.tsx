@@ -7,74 +7,85 @@ import { json } from "@remix-run/react";
  * @returns A list of discount nodes which are app discounts
  */
 export const getAppDiscountNodes = async (admin: any) => {
-    const response = await admin.graphql(
-        `#graphql
-                        query {
-                          discountNodes(first: 25, query: "appDiscountType:*") {
-                            edges {
-                              node {
-                                id
-                                discount {
-                                  ... on DiscountCodeBasic {
-                                    title
-                                  }
-                                  ... on DiscountCodeBxgy {
-                                    title
-                                  }
-                                  ... on DiscountCodeFreeShipping {
-                                    title
-                                  }
-                                  ... on DiscountAutomaticApp {
-                                    title
-                                  }
-                                  ... on DiscountAutomaticBasic {
-                                    title
-                                  }
-                                  ... on DiscountAutomaticBxgy {
-                                    title
-                                  }
-                                  ... on DiscountAutomaticFreeShipping {
-                                    title
-                                  }
-                                }
-                              }
-                            }
-                          }
-                        }`,
-    );
-    const data = await response.json();
-    return data?.data?.discountNodes?.edges.map((edge: any) => edge.node);
+    try {
+        const response = await admin.graphql(
+            `#graphql
+                                        query {
+                                          discountNodes(first: 25, query: "appDiscountType:*") {
+                                            edges {
+                                              node {
+                                                id
+                                                discount {
+                                                  ... on DiscountCodeBasic {
+                                                    title
+                                                  }
+                                                  ... on DiscountCodeBxgy {
+                                                    title
+                                                  }
+                                                  ... on DiscountCodeFreeShipping {
+                                                    title
+                                                  }
+                                                  ... on DiscountAutomaticApp {
+                                                    title
+                                                  }
+                                                  ... on DiscountAutomaticBasic {
+                                                    title
+                                                  }
+                                                  ... on DiscountAutomaticBxgy {
+                                                    title
+                                                  }
+                                                  ... on DiscountAutomaticFreeShipping {
+                                                    title
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }`,
+        );
+        const data = await response.json();
+        return data?.data?.discountNodes?.edges.map((edge: any) => edge.node);
+    } catch (e) {
+        console.log("error", e);
+    }
 };
 export const getFunctionalDiscountNodes = async (admin: any) => {
-    const response = await admin.graphql(
-        `#graphql
-                query discountNodes{
-    discountNodes(first: 250) {
-    nodes {
-      discount {
-        ... on DiscountAutomaticApp {
-                discountId
-          appDiscountType {
-            functionId
-            title
-          }
-        }
-      }
-      metafields(first: 1) {
-                nodes {
-                        namespace
-                        value
-                        key     
-                        id
-        }
-      }
+    try {
+        const response = await admin.graphql(
+            `#graphql
+                                query discountNodes{
+                    discountNodes(first: 250) {
+                    nodes {
+                      discount {
+                        ... on DiscountAutomaticApp {
+                                discountId
+                          appDiscountType {
+                            functionId
+                            title
+                          }
+                        }
+                      }
+                      metafields(first: 1) {
+                                nodes {
+                                        namespace
+                                        value
+                                        key     
+                                        id
+                        }
+                      }
+                    }
+                  }
+                }
+                                                `,
+        );
+
+        console.log("response", response);
+
+        const data = await response.json();
+        return data?.data?.discountNodes;
+    } catch (e) {
+        console.log("error", e);
     }
-  }
-}
-                                `,
-    );
-    const data = await response.json();
-    return data?.data?.discountNodes;
 };
 /**
  * Get a discount node by its ID
@@ -84,40 +95,44 @@ export const getFunctionalDiscountNodes = async (admin: any) => {
  */
 export const getAppDiscountNode = async (admin: any, id: string) => {
     const discountId = id;
-    const response = await admin.graphql(
-        `#graphql
-                            query($discountId: ID!) {
-                              discountNode(id: $discountId) {
-                                    id
-                                    discount {
-                                      ... on DiscountCodeBasic {
-                                    title
-                                      }
-                                      ... on DiscountCodeBxgy {
-                                    title
-                                      }
-                                      ... on DiscountCodeFreeShipping {
-                                    title
-                                      }
-                                      ... on DiscountAutomaticApp {
-                                    title
-                                      }
-                                      ... on DiscountAutomaticBasic {
-                                    title
-                                      }
-                                      ... on DiscountAutomaticBxgy {
-                                    title
-                                      }
-                                      ... on DiscountAutomaticFreeShipping {
-                                    title
-                                      }
-                                    }
-                              }
-                            }`,
-        { variables: { discountId } },
-    );
-    const data = await response.json();
-    return data?.data?.discountNode;
+    try {
+        const response = await admin.graphql(
+            `#graphql
+                                            query($discountId: ID!) {
+                                              discountNode(id: $discountId) {
+                                                    id
+                                                    discount {
+                                                      ... on DiscountCodeBasic {
+                                                    title
+                                                      }
+                                                      ... on DiscountCodeBxgy {
+                                                    title
+                                                      }
+                                                      ... on DiscountCodeFreeShipping {
+                                                    title
+                                                      }
+                                                      ... on DiscountAutomaticApp {
+                                                    title
+                                                      }
+                                                      ... on DiscountAutomaticBasic {
+                                                    title
+                                                      }
+                                                      ... on DiscountAutomaticBxgy {
+                                                    title
+                                                      }
+                                                      ... on DiscountAutomaticFreeShipping {
+                                                    title
+                                                      }
+                                                    }
+                                              }
+                                            }`,
+            { variables: { discountId } },
+        );
+        const data = await response.json();
+        return data?.data?.discountNode;
+    } catch (e) {
+        console.log("error", e);
+    }
 };
 
 /**
@@ -133,49 +148,53 @@ export const createFreeShippingDiscount = async (
     minimumAmount: string,
     title: string,
 ) => {
-    const response = await admin.graphql(
-        `#graphql
-                 mutation discountAutomaticFreeShippingCreate($freeShippingAutomaticDiscount: DiscountAutomaticFreeShippingInput!) {
-                       discountAutomaticFreeShippingCreate(freeShippingAutomaticDiscount: $freeShippingAutomaticDiscount) {
-                            automaticDiscountNode {
-                                     id
-                                     automaticDiscount {
-                                        ... on DiscountAutomaticFreeShipping {
-                                            title
-                                            status
-                                        }
-                                     }
-                            }
-                             userErrors {
-                                    field
-                                     message
-                            }
-                    }
-                    }
-    
-                    `,
-        {
-            variables: {
-                freeShippingAutomaticDiscount: {
-                    combinesWith: {
-                        orderDiscounts: true,
-                        productDiscounts: true,
-                    },
-                    minimumRequirement: {
-                        subtotal: {
-                            greaterThanOrEqualToSubtotal: minimumAmount,
+    try {
+        const response = await admin.graphql(
+            `#graphql
+                                 mutation discountAutomaticFreeShippingCreate($freeShippingAutomaticDiscount: DiscountAutomaticFreeShippingInput!) {
+                                       discountAutomaticFreeShippingCreate(freeShippingAutomaticDiscount: $freeShippingAutomaticDiscount) {
+                                            automaticDiscountNode {
+                                                     id
+                                                     automaticDiscount {
+                                                        ... on DiscountAutomaticFreeShipping {
+                                                            title
+                                                            status
+                                                        }
+                                                     }
+                                            }
+                                             userErrors {
+                                                    field
+                                                     message
+                                            }
+                                    }
+                                    }
+                    
+                                    `,
+            {
+                variables: {
+                    freeShippingAutomaticDiscount: {
+                        combinesWith: {
+                            orderDiscounts: true,
+                            productDiscounts: true,
                         },
+                        minimumRequirement: {
+                            subtotal: {
+                                greaterThanOrEqualToSubtotal: minimumAmount,
+                            },
+                        },
+                        title,
+                        startsAt: "2023-09-07T15:50:00Z",
                     },
-                    title,
-                    startsAt: "2023-09-07T15:50:00Z",
                 },
             },
-        },
-    );
+        );
 
-    const responseJson = await response.json();
-    const errors = responseJson?.data?.discountCreate?.userErrors ?? [];
-    return json({ data: responseJson, errors });
+        const responseJson = await response.json();
+        const errors = responseJson?.data?.discountCreate?.userErrors ?? [];
+        return json({ data: responseJson, errors });
+    } catch (e) {
+        console.log("error", e);
+    }
 };
 
 /**
@@ -191,44 +210,48 @@ export const updateFreeShippingDiscount = async (
     minimumAmount: string,
     id: string,
 ) => {
-    const response = await admin.graphql(
-        `#graphql
-                         mutation discountAutomaticFreeShippingUpdate($freeShippingAutomaticDiscount: DiscountAutomaticFreeShippingInput!, $id: ID!) {
-                           discountAutomaticFreeShippingUpdate(id:$id, freeShippingAutomaticDiscount: $freeShippingAutomaticDiscount) {
-                                automaticDiscountNode {
-                                         id
-                                                automaticDiscount {
-                                                ... on DiscountAutomaticFreeShipping {
-                                                        title
-                                                        status
+    try {
+        const response = await admin.graphql(
+            `#graphql
+                                         mutation discountAutomaticFreeShippingUpdate($freeShippingAutomaticDiscount: DiscountAutomaticFreeShippingInput!, $id: ID!) {
+                                           discountAutomaticFreeShippingUpdate(id:$id, freeShippingAutomaticDiscount: $freeShippingAutomaticDiscount) {
+                                                automaticDiscountNode {
+                                                         id
+                                                                automaticDiscount {
+                                                                ... on DiscountAutomaticFreeShipping {
+                                                                        title
+                                                                        status
+                                                                }
+                                                                }
                                                 }
+                                                 userErrors {
+                                                        field
+                                                         message
                                                 }
-                                }
-                                 userErrors {
-                                        field
-                                         message
-                                }
-                        }
-                        }
-        
-                        `,
-        {
-            variables: {
-                freeShippingAutomaticDiscount: {
-                    minimumRequirement: {
-                        subtotal: {
-                            greaterThanOrEqualToSubtotal: minimumAmount,
+                                        }
+                                        }
+                        
+                                        `,
+            {
+                variables: {
+                    freeShippingAutomaticDiscount: {
+                        minimumRequirement: {
+                            subtotal: {
+                                greaterThanOrEqualToSubtotal: minimumAmount,
+                            },
                         },
                     },
+                    id,
                 },
-                id,
             },
-        },
-    );
+        );
 
-    const responseJson = await response.json();
-    const errors = responseJson?.data?.discountCreate?.userErrors ?? [];
-    return json({ data: responseJson, errors });
+        const responseJson = await response.json();
+        const errors = responseJson?.data?.discountCreate?.userErrors ?? [];
+        return json({ data: responseJson, errors });
+    } catch (e) {
+        console.log("error", e);
+    }
 };
 
 /**
@@ -237,26 +260,30 @@ export const updateFreeShippingDiscount = async (
  * @param id ID of the discount
  */
 export const deactivateDiscount = async (admin: any, id: string) => {
-    const response = await admin.graphql(
-        `#graphql
-                        mutation discountAutomaticDeactivate($id: ID!) {
-                                discountAutomaticDeactivate(id: $id) {
-                            automaticDiscountNode {
-                              id
-                            }
-                            userErrors {
-                              field
-                              message
-                            }
-                          }
-                        }
-                        `,
-        { variables: { id } },
-    );
+    try {
+        const response = await admin.graphql(
+            `#graphql
+                                        mutation discountAutomaticDeactivate($id: ID!) {
+                                                discountAutomaticDeactivate(id: $id) {
+                                            automaticDiscountNode {
+                                              id
+                                            }
+                                            userErrors {
+                                              field
+                                              message
+                                            }
+                                          }
+                                        }
+                                        `,
+            { variables: { id } },
+        );
 
-    const responseJson = await response.json();
-    const errors = responseJson?.data?.discountCreate?.userErrors ?? [];
-    return json({ errors });
+        const responseJson = await response.json();
+        const errors = responseJson?.data?.discountCreate?.userErrors ?? [];
+        return json({ errors });
+    } catch (e) {
+        console.log("error", e);
+    }
 };
 
 /**
@@ -292,61 +319,65 @@ export const getAutomaticDiscountByTitle = async (
     admin: any,
     title: string,
 ) => {
-    const response = await admin.graphql(
-        `#graphql
-  query automaticDiscountByTitle($title: String!){
-    automaticDiscountNodes(first: 2, query: $title) {
-      edges {
-        node {
-          id
-          automaticDiscount {
-            ... on DiscountAutomaticBasic {
-              title
-              summary
-              customerGets {
-                items {
-                  ... on AllDiscountItems {
-                    allItems
-                  }
-                }
-              }
-              minimumRequirement {
-                ... on DiscountMinimumQuantity {
-                  greaterThanOrEqualToQuantity
-                }
-              }
-            }
-            ... on DiscountAutomaticBxgy {
-              title
-              summary
-              customerBuys {
-                value {
-                  ... on DiscountQuantity {
-                    quantity
-                  }
-                  ... on DiscountPurchaseAmount {
-                    amount
-                  }
-                }
-              }
-              customerGets {
-                value {
-                  ... on DiscountOnQuantity {
-                    quantity {
-                      quantity
+    try {
+        const response = await admin.graphql(
+            `#graphql
+                  query automaticDiscountByTitle($title: String!){
+                    automaticDiscountNodes(first: 2, query: $title) {
+                      edges {
+                        node {
+                          id
+                          automaticDiscount {
+                            ... on DiscountAutomaticBasic {
+                              title
+                              summary
+                              customerGets {
+                                items {
+                                  ... on AllDiscountItems {
+                                    allItems
+                                  }
+                                }
+                              }
+                              minimumRequirement {
+                                ... on DiscountMinimumQuantity {
+                                  greaterThanOrEqualToQuantity
+                                }
+                              }
+                            }
+                            ... on DiscountAutomaticBxgy {
+                              title
+                              summary
+                              customerBuys {
+                                value {
+                                  ... on DiscountQuantity {
+                                    quantity
+                                  }
+                                  ... on DiscountPurchaseAmount {
+                                    amount
+                                  }
+                                }
+                              }
+                              customerGets {
+                                value {
+                                  ... on DiscountOnQuantity {
+                                    quantity {
+                                      quantity
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
                     }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-        }`,
-        { variables: { title: "title:" + title } },
-    );
+                        }`,
+            { variables: { title: "title:" + title } },
+        );
 
-    const data = await response.json();
-    return data;
+        const data = await response.json();
+        return data;
+    } catch (e) {
+        console.log("error", e);
+    }
 };

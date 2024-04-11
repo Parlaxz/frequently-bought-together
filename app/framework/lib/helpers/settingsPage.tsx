@@ -4,6 +4,7 @@ import { getAllTags } from "~/framework/components/form/TagPicker";
 import { getPromotion, updatePromotions } from "./metafields";
 import { initFunctionalDiscount } from "./functionalDiscount";
 import shopifyServer, { authenticate, unauthenticated } from "~/shopify.server";
+import { getFunctionalDiscountNodes } from "./discounts";
 
 export const runSettingsPageLoader = async (params: any, request: any) => {
     // Step 1. get prerequisites via parsing the request and params
@@ -33,7 +34,8 @@ export const runSettingsPageAction = async (
 ) => {
     let { id } = params;
     const { admin, session } = await shopifyServer.authenticate.admin(request);
-
+    const settings = getFunctionalDiscountNodes(admin);
+    console.log("settings", settings);
     // 2. Generate a random ID if it's a new discount.
     if (id === "new") {
         id = randomlyGeneratedId();
@@ -41,6 +43,7 @@ export const runSettingsPageAction = async (
 
     //2. get and parse form data
     const formData = await request.formData();
+
     const parsedDiscount = JSON.parse(String(formData.get("discount") || ""));
     //3. Save the discount in the metafields in the promotion
     const promotionDiscount = {
@@ -51,18 +54,22 @@ export const runSettingsPageAction = async (
         id: id,
         type: promoName,
     };
-    await updatePromotions(admin, session, promotionDiscount);
-    //4. Check if a functional discount exists, if not create one
-    await initFunctionalDiscount(
-        admin,
-        parsedDiscount,
-        NAMESPACE,
-        KEY,
-        "upsellApp",
-        promoName,
-    );
-
-    return json({ status: "success" });
+    try {
+        await updatePromotions(admin, session, promotionDiscount);
+        //4. Check if a functional discount exists, if not create one
+        await initFunctionalDiscount(
+            admin,
+            parsedDiscount,
+            NAMESPACE,
+            KEY,
+            "upsellApp",
+            promoName,
+        );
+        return json({ status: "success" });
+    } catch (e) {
+        console.log(e);
+        return json({ status: "error" });
+    }
 };
 /**
  * Generates a randomly generated ID.

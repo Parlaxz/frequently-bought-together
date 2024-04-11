@@ -8,6 +8,7 @@ import {
     DiscountClass,
 } from "@shopify/discount-app-components";
 import { Card, ChoiceList } from "@shopify/polaris";
+import SnippetPreview from "~/framework/components/Snippet/SnippetPreview";
 import {
     DiscountSettingsCard,
     ProductPicker,
@@ -15,6 +16,7 @@ import {
     PromotionMetadataCard,
     TextBox,
 } from "~/framework/components/components";
+import { getStyling } from "~/framework/components/form/getStyling";
 
 import { useDiscountForm } from "~/framework/lib/helpers/hooks";
 
@@ -54,14 +56,23 @@ export default function FrequentlyBoughtTogether() {
 
     //!------------------------------------CONFIGURE HERE------------------------------------
     interface ConfigShape {
+        texts: {
+            containerTitle: string;
+        };
         target: ProductSelection;
         offerItems: ProductSelection;
         offerDiscount: ConfigDiscount;
         metadata: ConfigMetadata;
+        styles: object;
     }
 
     const loaderConfig = loaderData?.discount?.configuration;
     const config: ConfigShape = {
+        texts: {
+            containerTitle:
+                loaderConfig?.texts?.containerTitle ??
+                "Frequently Bought Together",
+        },
         target: {
             type: loaderConfig?.target?.type ?? "product",
             value: loaderConfig?.target?.value ?? [],
@@ -77,6 +88,17 @@ export default function FrequentlyBoughtTogether() {
             offerOnly: loaderConfig?.offerDiscount?.offerOnly ?? false,
         },
         metadata: getMetadata(loaderConfig?.metadata),
+        styles: {
+            classes: getStyling(loaderConfig, "class", [
+                "promo-add-to-cart",
+                "triggerPlusSymbol",
+                "fbt-container",
+                "old-price",
+                "new-price",
+            ]),
+
+            tags: getStyling(loaderConfig, "tag", ["H2", "IMG", "H3"]),
+        },
     };
 
     //load form
@@ -104,6 +126,10 @@ export default function FrequentlyBoughtTogether() {
                 "Boost sales by showcasing complementary products at a discounted price, enticing customers to purchase multiple items together."
             }
         >
+            <SnippetPreview
+                configuration={configuration}
+                type="frequently-bought-together"
+            />
             <PromotionMetadataCard configuration={configuration} />
 
             <ProductPicker
