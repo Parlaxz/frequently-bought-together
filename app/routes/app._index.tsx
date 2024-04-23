@@ -20,6 +20,7 @@ import {
 } from "~/framework/lib/helpers/metafields";
 import { useFetcher, useLoaderData } from "@remix-run/react";
 import { useState } from "react";
+import ActivationBox from "~/framework/components/homePage/ActivationBox";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
     const { admin } = await authenticate.admin(request);
@@ -94,6 +95,7 @@ export default function Index() {
             <ui-title-bar title="Remix app template"></ui-title-bar>
 
             <BlockStack gap="500">
+                <ActivationBox />
                 <Card>
                     <div className="grid">
                         {promotionTypes.map((promotionType) => (
