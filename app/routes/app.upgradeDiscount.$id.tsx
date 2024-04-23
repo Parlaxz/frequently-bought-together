@@ -8,7 +8,7 @@ import {
     DiscountClass,
 } from "@shopify/discount-app-components";
 import { Card, ChoiceList } from "@shopify/polaris";
-import SnippetPreview from "~/framework/components/Snippet/SnippetPreview";
+import SnippetPreview from "~/framework/components/Styling/SnippetPreview";
 import {
     DiscountSettingsCard,
     ProductPicker,

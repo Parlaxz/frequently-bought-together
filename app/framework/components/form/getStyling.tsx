@@ -1,3 +1,11 @@
+/**
+ * helper function for getting the styling objects used in form pages like FBT.
+ *
+ * @param loaderConfig the loader gives a config of previously saved styles, this is used to get the styling for the requested keys
+ * @param type the type of styling object to return, either class or tag
+ * @param requestedKeys the keys, usually class names or tag names, to return the styling for
+ * @returns
+ */
 export const getStyling = (
     loaderConfig: any,
     type: "class" | "tag",

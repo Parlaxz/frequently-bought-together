@@ -77,6 +77,8 @@ export function run(input: RunInput): FunctionRunResult {
 
     // Add volume discounts to lineItemDiscounts
     processVolumeDiscount(storePromotions, input, lineItemDiscounts);
+    processFreeGiftDiscount(storePromotions, input, lineItemDiscounts);
+
     console.log(
         "lineItemDiscounts",
         JSON.stringify(lineItemDiscounts, null, 2),
@@ -216,6 +218,51 @@ const processFrequentlyBoughtTogether = (
         }
     });
 };
+
+const processFreeGiftDiscount = (
+    storePromotions: StorePromotion[],
+    input: RunInput,
+    lineItemDiscounts: LineItemDiscount[],
+) => {
+    storePromotions
+        .filter((promo) => promo.type === "freeGift")
+        .forEach((promo) => {
+            const targets = promo.configuration.offerItems;
+            const itemsInCart = input.cart.lines.map((line) => {
+                if (line.merchandise.__typename === "ProductVariant") {
+                    const attributes = JSON.parse(
+                        line?.attribute?.value ?? "{}",
+                    );
+                    return {
+                        id: cleanGID(line.merchandise.product.id),
+                        quantity: line.quantity,
+                        collections: attributes.collections,
+                        tags: attributes.tags,
+                    };
+                }
+                return { id: 0, quantity: 0 };
+            });
+
+            const matchingIds = getMatchingIds(itemsInCart, targets);
+            matchingIds.forEach((id) => {
+                const targetDiscount = lineItemDiscounts.find(
+                    (discount) => discount.productId === id,
+                );
+
+                if (targetDiscount) {
+                    targetDiscount.discounts.push({
+                        title: promo.title,
+                        id: promo.id,
+                        type: "percentage",
+                        value: 100,
+                        message: promo.configuration.metadata.discountMessage,
+                        quantity: null,
+                    });
+                }
+            });
+        });
+};
+
 const processVolumeDiscount = (
     storePromotions: StorePromotion[],
     input: RunInput,

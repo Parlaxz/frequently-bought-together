@@ -1,5 +1,5 @@
 import { ChoiceList, RangeSlider, TextField } from "@shopify/polaris";
-import { buildStyles } from "../Snippet/SnippetPreview";
+import { buildStyles } from "../Styling/SnippetPreview";
 import { ColorPickerWrapper } from "./ColorPickerWrapper";
 
 function StylingField({

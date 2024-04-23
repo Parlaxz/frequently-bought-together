@@ -27,7 +27,26 @@ function SnippetPreview({ type, configuration }) {
     } else if (type === "upgrade-discount") {
         snippetSettings = ugSnippetConfig;
     }
-    const identifers = snippetSettings.identifiers;
+    const generateIdentifiers = (configuration) => {
+        const identifiers = [];
+        for (const [key, value] of Object.entries(configuration.styles)) {
+            console.log("value: ", value);
+            if (key === "tags") {
+                // eslint-disable-next-line no-unused-vars
+                for (const [tag, _] of Object.entries(value)) {
+                    identifiers.push({ type: "tag", value: tag });
+                }
+            }
+            if (key === "classes") {
+                // eslint-disable-next-line no-unused-vars
+                for (const [className, _] of Object.entries(value)) {
+                    identifiers.push({ type: "class", value: className });
+                }
+            }
+        }
+        return identifiers;
+    };
+    const identifers = generateIdentifiers(configuration);
     const offerProducts = snippetSettings.offerProducts;
     const insertFunction = snippetSettings.insertFunction;
     const formId = snippetSettings.formId;
@@ -122,7 +141,12 @@ function SnippetPreview({ type, configuration }) {
     );
 }
 
-const generateMasterCard = (styles, configuration, titleStyle) => {
+export const generateMasterCard = (
+    styles,
+    configuration,
+    titleStyle,
+    withCard = true,
+) => {
     if (!styles) {
         return <>TODO</>;
     }
@@ -193,14 +217,25 @@ const generateMasterCard = (styles, configuration, titleStyle) => {
         );
     }
 
-    return (
-        <Card>
-            <Text variant="headingMd" as="h2">
-                {header}
-            </Text>
-            {styleSheets}
-        </Card>
-    );
+    if (withCard) {
+        return (
+            <Card>
+                <Text variant="headingMd" as="h2">
+                    {header}
+                </Text>
+                {styleSheets}
+            </Card>
+        );
+    } else {
+        return (
+            <div>
+                <Text variant="headingMd" as="h2">
+                    {header}
+                </Text>
+                {styleSheets}
+            </div>
+        );
+    }
 };
 
 export default SnippetPreview;

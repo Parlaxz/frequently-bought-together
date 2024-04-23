@@ -7,7 +7,7 @@ import {
     CombinationCard,
     DiscountClass,
 } from "@shopify/discount-app-components";
-import SnippetPreview from "~/framework/components/Snippet/SnippetPreview";
+import SnippetPreview from "~/framework/components/Styling/SnippetPreview";
 import {
     ProductPicker,
     PromoPage,

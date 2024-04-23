@@ -8,7 +8,9 @@ import {
     DiscountClass,
 } from "@shopify/discount-app-components";
 import { Card, ChoiceList } from "@shopify/polaris";
-import SnippetPreview from "~/framework/components/Snippet/SnippetPreview";
+import SnippetPreview from "~/framework/components/Styling/SnippetPreview";
+import StylingCard from "~/framework/components/Styling/StylingCard";
+
 import {
     DiscountSettingsCard,
     ProductPicker,
@@ -174,6 +176,9 @@ export default function FrequentlyBoughtTogether() {
                     }}
                 />
             </DiscountSettingsCard>
+
+            <StylingCard configuration={configuration} />
+
             <div className="hidden">
                 <CombinationCard
                     combinableDiscountTypes={combinesWith}

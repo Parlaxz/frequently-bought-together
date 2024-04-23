@@ -1,5 +1,5 @@
 {
-  "include": ["**/*.ts", "**/*.tsx", "app/framework/components/Snippet/SnippetPreview.jsx", "app/framework/components/Snippet/snippetHelpers.jsx"],
+  "include": ["**/*.ts", "**/*.tsx", "app/framework/components/Styling/SnippetPreview.jsx", "app/framework/components/Styling/snippetHelpers.jsx"],
   "compilerOptions": {
     "lib": ["DOM", "DOM.Iterable", "ES2019"],
     "strict": true,
