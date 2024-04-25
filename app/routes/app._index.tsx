@@ -95,8 +95,9 @@ export default function Index() {
             <ui-title-bar title="Remix app template"></ui-title-bar>
 
             <BlockStack gap="500">
-                <ActivationBox />
                 <Card>
+                    {" "}
+                    <ActivationBox />
                     <div className="grid">
                         {promotionTypes.map((promotionType) => (
                             <Link

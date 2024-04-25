@@ -1,4 +1,4 @@
-import { Banner } from "@shopify/polaris";
+import { Banner, Card } from "@shopify/polaris";
 import { useEffect, useState } from "react";
 declare global {
     interface Window {
@@ -17,21 +17,27 @@ function ActivationBox() {
     const handle = "app-embed";
     const [enabled, setEnabled] = useState(true);
     const [changed, setChanged] = useState(false);
+    const [link, setLink] = useState("");
     const checkEnabled = async (initial = false) => {
         const response = await fetch("/api/installData");
         const data = await response.json();
         console.log("data", data);
+        console.log("data.enabled", data.enabled);
+        console.log("initial", initial);
         if (initial && data.enabled) setEnabled(true);
         else if (data.enabled) setChanged(true);
         else setEnabled(false);
     };
     useEffect(() => {
-        console.log("ActivationBox");
+        setLink(
+            `https://${myshopDomain}/admin/themes/current/editor?context=apps&activateAppId=${uuid}/${handle}`,
+        );
         checkEnabled(true);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return (
-        <>
+        <Card>
             {!enabled ? (
                 <Banner
                     title={
@@ -45,15 +51,14 @@ function ActivationBox() {
                             setInterval(() => {
                                 checkEnabled();
                             }, 3000);
-                            const link = `https://${myshopDomain}/admin/themes/current/editor?context=apps&activateAppId=${uuid}/${handle}`;
-                            if (typeof window !== "undefined")
-                                window.open(link, "_blank");
                         },
+                        url: link,
+                        target: "_blank",
                     }}
                     tone={changed ? "success" : "warning"}
                 ></Banner>
             ) : null}
-        </>
+        </Card>
     );
 }
 
