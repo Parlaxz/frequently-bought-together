@@ -12,6 +12,7 @@ import stylesheet from "~/styles.css";
 import discountStyles from "extensions/upsell-app-theme/assets/styles.css";
 
 import { authenticate } from "./shopify.server";
+import TawkToScript from "./framework/components/TawkToWidget";
 
 export const links: LinksFunction = () => [
     { rel: "stylesheet", href: stylesheet },
@@ -27,7 +28,6 @@ export const loader: LoaderFunction = async ({ request }) => {
 };
 export default function App() {
     const data = useLoaderData<typeof loader>();
-
     return (
         <html>
             <head>
@@ -41,11 +41,18 @@ export default function App() {
                     rel="stylesheet"
                     href="https://cdn.shopify.com/static/fonts/inter/v4/styles.css"
                 />
-
+                <style
+                    dangerouslySetInnerHTML={{
+                        __html: `.tawk-branding {
+                                display: none !important;
+                            }`,
+                    }}
+                ></style>
                 <Meta />
                 <Links />
             </head>
             <body>
+                <TawkToScript />
                 <script
                     dangerouslySetInnerHTML={{
                         __html: `window.ENV = ${JSON.stringify(data.ENV)}`,
